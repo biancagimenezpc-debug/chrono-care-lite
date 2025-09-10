@@ -3,6 +3,7 @@ import Navigation from "@/components/Navigation";
 import Dashboard from "@/components/Dashboard";
 import PatientList from "@/components/PatientList";
 import AppointmentManager from "@/components/AppointmentManager";
+import Configuration from "@/components/Configuration";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -22,11 +23,7 @@ const Index = () => {
           </div>
         );
       case "configuracion":
-        return (
-          <div className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground">Configuración - En desarrollo</p>
-          </div>
-        );
+        return <Configuration />;
       default:
         return <Dashboard />;
     }
