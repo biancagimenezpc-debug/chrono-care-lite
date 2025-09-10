@@ -4,6 +4,7 @@ import Dashboard from "@/components/Dashboard";
 import PatientList from "@/components/PatientList";
 import AppointmentManager from "@/components/AppointmentManager";
 import Configuration from "@/components/Configuration";
+import MedicalHistory from "@/components/MedicalHistory";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -17,11 +18,7 @@ const Index = () => {
       case "turnos":
         return <AppointmentManager />;
       case "historias":
-        return (
-          <div className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground">Módulo de Historias Clínicas - En desarrollo</p>
-          </div>
-        );
+        return <MedicalHistory />;
       case "configuracion":
         return <Configuration />;
       default:
