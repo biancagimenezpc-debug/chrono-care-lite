@@ -7,19 +7,19 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, Clock, Plus, User, Phone } from "lucide-react";
+import { Calendar, Clock, Plus, User, Phone, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { toast } from "@/hooks/use-toast";
+import { useAppointments } from "@/hooks/useAppointments";
 
 // Esquema de validación para nueva cita
 const newAppointmentSchema = z.object({
-  patient: z.string().min(2, "El nombre del paciente es requerido"),
-  phone: z.string().min(10, "El teléfono debe tener al menos 10 dígitos"),
+  patient_name: z.string().min(2, "El nombre del paciente es requerido"),
+  patient_phone: z.string().min(10, "El teléfono debe tener al menos 10 dígitos"),
   date: z.string().min(1, "La fecha es requerida"),
   time: z.string().min(1, "La hora es requerida"),
-  type: z.string().min(1, "El tipo de consulta es requerido"),
+  consultation_type: z.string().min(1, "El tipo de consulta es requerido"),
   notes: z.string().optional(),
 });
 
@@ -28,86 +28,70 @@ type NewAppointmentForm = z.infer<typeof newAppointmentSchema>;
 const AppointmentManager = () => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { appointments, loading, createAppointment } = useAppointments();
 
   const form = useForm<NewAppointmentForm>({
     resolver: zodResolver(newAppointmentSchema),
     defaultValues: {
-      patient: "",
-      phone: "",
+      patient_name: "",
+      patient_phone: "",
       date: selectedDate,
       time: "",
-      type: "",
+      consultation_type: "",
       notes: "",
     },
   });
 
-  const onSubmit = (data: NewAppointmentForm) => {
-    console.log("Nueva cita:", data);
-    toast({
-      title: "Cita agendada",
-      description: `Cita para ${data.patient} el ${data.date} a las ${data.time}`,
-    });
-    form.reset();
-    setIsDialogOpen(false);
-  };
-
-  // Datos mock de turnos
-  const appointments = [
-    {
-      id: 1,
-      patient: "María González",
-      time: "09:00",
-      type: "Consulta General",
-      status: "Confirmada",
-      phone: "+34 123 456 789",
-      notes: "Control rutinario"
-    },
-    {
-      id: 2,
-      patient: "Carlos Rodríguez",
-      time: "10:30",
-      type: "Control",
-      status: "Pendiente",
-      phone: "+34 987 654 321",
-      notes: "Seguimiento diabetes"
-    },
-    {
-      id: 3,
-      patient: "Ana López",
-      time: "11:15",
-      type: "Especialista",
-      status: "Confirmada",
-      phone: "+34 555 123 456",
-      notes: "Consulta cardiología"
-    },
-    {
-      id: 4,
-      patient: "José Martínez",
-      time: "14:00",
-      type: "Urgencia",
-      status: "En curso",
-      phone: "+34 777 888 999",
-      notes: "Dolor torácico"
+  const onSubmit = async (data: NewAppointmentForm) => {
+    try {
+      const appointmentData = {
+        patient_name: data.patient_name!,
+        patient_phone: data.patient_phone!,
+        date: data.date!,
+        time: data.time!,
+        consultation_type: data.consultation_type!,
+        notes: data.notes || '',
+        status: 'programada' as const,
+      };
+      
+      await createAppointment(appointmentData);
+      form.reset();
+      setIsDialogOpen(false);
+    } catch (error) {
+      // Error is handled in the hook
     }
-  ];
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Confirmada":
+      case "confirmada":
         return "bg-success text-success-foreground";
-      case "Pendiente":
+      case "programada":
         return "bg-warning text-warning-foreground";
-      case "En curso":
+      case "completada":
         return "bg-primary text-primary-foreground";
+      case "cancelada":
+        return "bg-destructive text-destructive-foreground";
       default:
         return "bg-muted text-muted-foreground";
     }
   };
 
   const timeSlots = [
-    "08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:15", 
+    "08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", 
     "12:00", "12:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00"
   ];
+
+  // Filter appointments for selected date
+  const todayAppointments = appointments.filter(apt => apt.date === selectedDate);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -131,7 +115,7 @@ const AppointmentManager = () => {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="patient"
+                  name="patient_name"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Nombre del Paciente</FormLabel>
@@ -145,7 +129,7 @@ const AppointmentManager = () => {
                 
                 <FormField
                   control={form.control}
-                  name="phone"
+                  name="patient_phone"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Teléfono</FormLabel>
@@ -200,7 +184,7 @@ const AppointmentManager = () => {
 
                 <FormField
                   control={form.control}
-                  name="type"
+                  name="consultation_type"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Tipo de Consulta</FormLabel>
@@ -248,7 +232,16 @@ const AppointmentManager = () => {
                   >
                     Cancelar
                   </Button>
-                  <Button type="submit">Agendar Cita</Button>
+                  <Button type="submit" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Agendando...
+                      </>
+                    ) : (
+                      'Agendar Cita'
+                    )}
+                  </Button>
                 </div>
               </form>
             </Form>
@@ -276,7 +269,7 @@ const AppointmentManager = () => {
               <h4 className="font-medium text-foreground mb-3">Horarios Disponibles</h4>
               <div className="grid grid-cols-2 gap-2">
                 {timeSlots.map((time) => {
-                  const isBooked = appointments.some(apt => apt.time === time);
+                  const isBooked = todayAppointments.some(apt => apt.time === time);
                   return (
                     <Button
                       key={time}
@@ -298,31 +291,33 @@ const AppointmentManager = () => {
           <CardHeader>
             <CardTitle className="text-lg font-semibold flex items-center space-x-2">
               <Clock className="w-5 h-5 text-primary" />
-              <span>Citas del Día - {selectedDate}</span>
+              <span>Citas del Día - {selectedDate} ({todayAppointments.length})</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {appointments.map((appointment) => (
+              {todayAppointments.map((appointment) => (
                 <div key={appointment.id} className="border border-border rounded-lg p-4 hover:shadow-md transition-shadow">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="text-lg font-semibold text-foreground flex items-center space-x-2">
                           <User className="w-4 h-4" />
-                          <span>{appointment.patient}</span>
+                          <span>{appointment.patient_name}</span>
                         </h3>
-                        <Badge className={getStatusColor(appointment.status)}>{appointment.status}</Badge>
+                        <Badge className={getStatusColor(appointment.status)}>
+                          {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                        </Badge>
                       </div>
                       
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-muted-foreground">
                         <div className="flex items-center space-x-2">
                           <Clock className="w-4 h-4" />
-                          <span>{appointment.time} - {appointment.type}</span>
+                          <span>{appointment.time} - {appointment.consultation_type}</span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Phone className="w-4 h-4" />
-                          <span>{appointment.phone}</span>
+                          <span>{appointment.patient_phone}</span>
                         </div>
                       </div>
                       
@@ -343,11 +338,15 @@ const AppointmentManager = () => {
               ))}
             </div>
             
-            {appointments.length === 0 && (
+            {todayAppointments.length === 0 && (
               <div className="text-center py-8">
                 <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">No hay citas programadas para esta fecha.</p>
-                <Button className="mt-4" variant="outline">
+                <Button 
+                  className="mt-4" 
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(true)}
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   Agendar Primera Cita
                 </Button>

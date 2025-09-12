@@ -3,63 +3,106 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Phone, Mail, Calendar, Eye } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Search, Plus, Phone, Mail, Calendar, Eye, Loader2 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { usePatients } from "@/hooks/usePatients";
+import { Patient } from "@/lib/supabase";
+
+// Esquema de validación para nuevo paciente
+const newPatientSchema = z.object({
+  name: z.string().min(2, "El nombre es requerido"),
+  email: z.string().email("Email inválido").optional().or(z.literal("")),
+  phone: z.string().min(10, "El teléfono debe tener al menos 10 dígitos"),
+  birth_date: z.string().min(1, "La fecha de nacimiento es requerida"),
+  gender: z.string().min(1, "El género es requerido"),
+  address: z.string().optional(),
+  emergency_contact: z.string().optional(),
+  emergency_phone: z.string().optional(),
+  insurance: z.string().optional(),
+  medical_conditions: z.string().optional(),
+  medications: z.string().optional(),
+  allergies: z.string().optional(),
+});
+
+type NewPatientForm = z.infer<typeof newPatientSchema>;
 
 const PatientList = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { patients, loading, createPatient } = usePatients();
 
-  // Datos mock de pacientes
-  const patients = [
-    {
-      id: 1,
-      name: "María González",
-      email: "maria.gonzalez@email.com",
-      phone: "+34 123 456 789",
-      age: 34,
-      lastVisit: "2024-01-15",
-      status: "Activo",
-      condition: "Hipertensión"
+  const form = useForm<NewPatientForm>({
+    resolver: zodResolver(newPatientSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      birth_date: "",
+      gender: "",
+      address: "",
+      emergency_contact: "",
+      emergency_phone: "",
+      insurance: "",
+      medical_conditions: "",
+      medications: "",
+      allergies: "",
     },
-    {
-      id: 2,
-      name: "Carlos Rodríguez",
-      email: "carlos.rodriguez@email.com",
-      phone: "+34 987 654 321",
-      age: 45,
-      lastVisit: "2024-01-10",
-      status: "Activo",
-      condition: "Diabetes"
-    },
-    {
-      id: 3,
-      name: "Ana López",
-      email: "ana.lopez@email.com",
-      phone: "+34 555 123 456",
-      age: 28,
-      lastVisit: "2024-01-08",
-      status: "Inactivo",
-      condition: "Control rutinario"
-    },
-    {
-      id: 4,
-      name: "José Martínez",
-      email: "jose.martinez@email.com",
-      phone: "+34 777 888 999",
-      age: 52,
-      lastVisit: "2024-01-12",
-      status: "Activo",
-      condition: "Cardiología"
+  });
+
+  const onSubmit = async (data: NewPatientForm) => {
+    try {
+      const patientData: Omit<Patient, 'id' | 'created_at'> = {
+        name: data.name,
+        email: data.email || undefined,
+        phone: data.phone,
+        birth_date: data.birth_date,
+        gender: data.gender,
+        address: data.address || undefined,
+        emergency_contact: data.emergency_contact || undefined,
+        emergency_phone: data.emergency_phone || undefined,
+        insurance: data.insurance || undefined,
+        medical_conditions: data.medical_conditions ? data.medical_conditions.split(',').map(s => s.trim()) : [],
+        medications: data.medications ? data.medications.split(',').map(s => s.trim()) : [],
+        allergies: data.allergies ? data.allergies.split(',').map(s => s.trim()) : [],
+      };
+      
+      await createPatient(patientData);
+      form.reset();
+      setIsDialogOpen(false);
+    } catch (error) {
+      // Error is handled in the hook
     }
-  ];
+  };
 
   const filteredPatients = patients.filter(patient =>
     patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    patient.email.toLowerCase().includes(searchTerm.toLowerCase())
+    (patient.email && patient.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const getStatusColor = (status: string) => {
-    return status === "Activo" ? "bg-success text-success-foreground" : "bg-muted text-muted-foreground";
+  const calculateAge = (birthDate: string) => {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -68,16 +111,245 @@ const PatientList = () => {
           <h1 className="text-3xl font-semibold text-foreground">Gestión de Pacientes</h1>
           <p className="text-muted-foreground mt-2">Administre la información de sus pacientes</p>
         </div>
-        <Button className="flex items-center space-x-2">
-          <Plus className="w-4 h-4" />
-          <span>Nuevo Paciente</span>
-        </Button>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="flex items-center space-x-2">
+              <Plus className="w-4 h-4" />
+              <span>Nuevo Paciente</span>
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Registrar Nuevo Paciente</DialogTitle>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nombre Completo *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nombre completo" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="email@ejemplo.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Teléfono *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="+34 123 456 789" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="birth_date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Fecha de Nacimiento *</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="gender"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Género *</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccionar género" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Masculino">Masculino</SelectItem>
+                            <SelectItem value="Femenino">Femenino</SelectItem>
+                            <SelectItem value="Otro">Otro</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="insurance"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Seguro Médico</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nombre del seguro" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dirección</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Dirección completa" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="emergency_contact"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Contacto de Emergencia</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nombre del contacto" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="emergency_phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Teléfono de Emergencia</FormLabel>
+                        <FormControl>
+                          <Input placeholder="+34 123 456 789" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="medical_conditions"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Condiciones Médicas</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Separar por comas: Hipertensión, Diabetes..." 
+                          className="resize-none"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="medications"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Medicamentos Actuales</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Separar por comas: Aspirina, Metformina..." 
+                          className="resize-none"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="allergies"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Alergias</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Separar por comas: Penicilina, Frutos secos..." 
+                          className="resize-none"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex justify-end space-x-2 pt-4">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setIsDialogOpen(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Guardando...
+                      </>
+                    ) : (
+                      'Registrar Paciente'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <CardTitle className="text-lg font-semibold">Lista de Pacientes</CardTitle>
+            <CardTitle className="text-lg font-semibold">Lista de Pacientes ({patients.length})</CardTitle>
             <div className="relative w-full sm:w-80">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -97,31 +369,39 @@ const PatientList = () => {
                   <div className="flex-1">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2">
                       <h3 className="text-lg font-semibold text-foreground">{patient.name}</h3>
-                      <Badge className={getStatusColor(patient.status)}>{patient.status}</Badge>
+                      <Badge variant="secondary">
+                        {calculateAge(patient.birth_date)} años
+                      </Badge>
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
-                      <div className="flex items-center space-x-2">
-                        <Mail className="w-4 h-4" />
-                        <span>{patient.email}</span>
-                      </div>
+                      {patient.email && (
+                        <div className="flex items-center space-x-2">
+                          <Mail className="w-4 h-4" />
+                          <span>{patient.email}</span>
+                        </div>
+                      )}
                       <div className="flex items-center space-x-2">
                         <Phone className="w-4 h-4" />
                         <span>{patient.phone}</span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Calendar className="w-4 h-4" />
-                        <span>Última visita: {patient.lastVisit}</span>
+                        <span>Nacimiento: {new Date(patient.birth_date).toLocaleDateString()}</span>
                       </div>
                       <div>
-                        <span className="font-medium">Edad:</span> {patient.age} años
+                        <span className="font-medium">Género:</span> {patient.gender}
                       </div>
                     </div>
                     
-                    <div className="mt-2">
-                      <span className="text-sm font-medium text-foreground">Condición: </span>
-                      <span className="text-sm text-muted-foreground">{patient.condition}</span>
-                    </div>
+                    {patient.medical_conditions.length > 0 && (
+                      <div className="mt-2">
+                        <span className="text-sm font-medium text-foreground">Condiciones: </span>
+                        <span className="text-sm text-muted-foreground">
+                          {patient.medical_conditions.join(', ')}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex items-center space-x-2">
@@ -138,7 +418,12 @@ const PatientList = () => {
           
           {filteredPatients.length === 0 && (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">No se encontraron pacientes con ese criterio de búsqueda.</p>
+              <p className="text-muted-foreground">
+                {patients.length === 0 
+                  ? "No hay pacientes registrados. Registre el primer paciente."
+                  : "No se encontraron pacientes con ese criterio de búsqueda."
+                }
+              </p>
             </div>
           )}
         </CardContent>

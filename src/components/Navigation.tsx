@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Home, Users, Calendar, FileText, Settings } from "lucide-react";
+import { Home, Users, Calendar, FileText, Settings, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface NavigationProps {
   activeTab: string;
@@ -7,6 +8,8 @@ interface NavigationProps {
 }
 
 const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
+  const { user, signOut } = useAuth();
+  
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: Home },
     { id: "pacientes", label: "Pacientes", icon: Users },
@@ -14,6 +17,10 @@ const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
     { id: "historias", label: "Historias", icon: FileText },
     { id: "configuracion", label: "Configuración", icon: Settings },
   ];
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   return (
     <nav className="bg-card border-b border-border px-6 py-4">
@@ -44,9 +51,18 @@ const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
           })}
         </div>
 
-        <div className="md:hidden">
-          <Button variant="ghost" size="sm">
-            <Users className="w-4 h-4" />
+        <div className="flex items-center space-x-4">
+          <span className="text-sm text-muted-foreground hidden md:block">
+            {user?.email}
+          </span>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleSignOut}
+            className="flex items-center space-x-2"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="hidden md:inline">Cerrar Sesión</span>
           </Button>
         </div>
       </div>
