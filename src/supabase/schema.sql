@@ -1,5 +1,17 @@
 -- Crear las tablas necesarias para el sistema médico
 
+-- Tabla de perfiles de usuario con roles
+CREATE TABLE user_profiles (
+    id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    email TEXT NOT NULL,
+    full_name TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'doctor' CHECK (role IN ('admin', 'doctor')),
+    specialty TEXT,
+    license_number TEXT,
+    is_active BOOLEAN DEFAULT true
+);
+
 -- Tabla de pacientes
 CREATE TABLE patients (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
