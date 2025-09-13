@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/integrations/supabase/client'
 import { toast } from '@/components/ui/use-toast'
 
 export type UserProfile = {
   id: string
+  user_id: string
   created_at: string
+  updated_at: string
   email: string
   full_name: string
-  role: 'admin' | 'doctor'
+  role: string
   specialty?: string
   license_number?: string
   is_active: boolean
@@ -46,7 +48,7 @@ export const useUserManagement = () => {
       const { data, error } = await supabase
         .from('user_profiles')
         .select('role')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .single()
 
       if (error) throw error
@@ -60,7 +62,7 @@ export const useUserManagement = () => {
     email: string
     password: string
     full_name: string
-    role: 'admin' | 'doctor'
+    role: string
     specialty?: string
     license_number?: string
   }) => {
@@ -70,38 +72,22 @@ export const useUserManagement = () => {
         throw new Error('Solo los administradores pueden crear usuarios')
       }
 
-      // Create auth user (this would typically be done via admin SDK or edge function)
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: userData.email,
-        password: userData.password,
-        email_confirm: true
+      // Call edge function to create user
+      const { data: functionData, error: functionError } = await supabase.functions.invoke('create-admin-user', {
+        body: userData
       })
 
-      if (authError) throw authError
+      if (functionError) throw functionError
 
-      // Create user profile
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .insert([{
-          id: authData.user.id,
-          email: userData.email,
-          full_name: userData.full_name,
-          role: userData.role,
-          specialty: userData.specialty,
-          license_number: userData.license_number
-        }])
-        .select()
-        .single()
-
-      if (error) throw error
-
-      setUsers(prev => [data, ...prev])
+      // Refresh users list
+      await fetchUsers()
+      
       toast({
         title: "Usuario creado",
-        description: `${data.full_name} ha sido registrado exitosamente`,
+        description: `${userData.full_name} ha sido registrado exitosamente`,
       })
       
-      return data
+      return functionData
     } catch (error: any) {
       toast({
         title: "Error al crear usuario",

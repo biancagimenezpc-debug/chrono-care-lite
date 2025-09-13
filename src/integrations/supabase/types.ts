@@ -14,7 +14,186 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      appointments: {
+        Row: {
+          consultation_type: string
+          created_at: string
+          date: string
+          doctor_id: string
+          id: string
+          notes: string | null
+          patient_id: string | null
+          patient_name: string
+          patient_phone: string | null
+          status: string
+          time: string
+        }
+        Insert: {
+          consultation_type: string
+          created_at?: string
+          date: string
+          doctor_id: string
+          id?: string
+          notes?: string | null
+          patient_id?: string | null
+          patient_name: string
+          patient_phone?: string | null
+          status?: string
+          time: string
+        }
+        Update: {
+          consultation_type?: string
+          created_at?: string
+          date?: string
+          doctor_id?: string
+          id?: string
+          notes?: string | null
+          patient_id?: string | null
+          patient_name?: string
+          patient_phone?: string | null
+          status?: string
+          time?: string
+        }
+        Relationships: []
+      }
+      medical_records: {
+        Row: {
+          consultation_type: string
+          created_at: string
+          date: string
+          diagnosis: string | null
+          doctor_id: string
+          follow_up_date: string | null
+          id: string
+          medications: string | null
+          notes: string | null
+          patient_id: string
+          patient_name: string
+          symptoms: string | null
+          treatment: string | null
+        }
+        Insert: {
+          consultation_type: string
+          created_at?: string
+          date: string
+          diagnosis?: string | null
+          doctor_id: string
+          follow_up_date?: string | null
+          id?: string
+          medications?: string | null
+          notes?: string | null
+          patient_id: string
+          patient_name: string
+          symptoms?: string | null
+          treatment?: string | null
+        }
+        Update: {
+          consultation_type?: string
+          created_at?: string
+          date?: string
+          diagnosis?: string | null
+          doctor_id?: string
+          follow_up_date?: string | null
+          id?: string
+          medications?: string | null
+          notes?: string | null
+          patient_id?: string
+          patient_name?: string
+          symptoms?: string | null
+          treatment?: string | null
+        }
+        Relationships: []
+      }
+      patients: {
+        Row: {
+          address: string | null
+          allergies: string[] | null
+          birth_date: string | null
+          created_at: string
+          email: string | null
+          emergency_contact: string | null
+          emergency_phone: string | null
+          gender: string | null
+          id: string
+          insurance: string | null
+          medical_conditions: string[] | null
+          medications: string[] | null
+          name: string
+          phone: string | null
+        }
+        Insert: {
+          address?: string | null
+          allergies?: string[] | null
+          birth_date?: string | null
+          created_at?: string
+          email?: string | null
+          emergency_contact?: string | null
+          emergency_phone?: string | null
+          gender?: string | null
+          id?: string
+          insurance?: string | null
+          medical_conditions?: string[] | null
+          medications?: string[] | null
+          name: string
+          phone?: string | null
+        }
+        Update: {
+          address?: string | null
+          allergies?: string[] | null
+          birth_date?: string | null
+          created_at?: string
+          email?: string | null
+          emergency_contact?: string | null
+          emergency_phone?: string | null
+          gender?: string | null
+          id?: string
+          insurance?: string | null
+          medical_conditions?: string[] | null
+          medications?: string[] | null
+          name?: string
+          phone?: string | null
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          is_active: boolean
+          license_number: string | null
+          role: string
+          specialty: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id?: string
+          is_active?: boolean
+          license_number?: string | null
+          role?: string
+          specialty?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          is_active?: boolean
+          license_number?: string | null
+          role?: string
+          specialty?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
