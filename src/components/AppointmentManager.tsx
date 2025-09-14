@@ -309,10 +309,10 @@ const AppointmentManager = () => {
                       variant={isBooked ? "secondary" : "outline"}
                       size="sm"
                       disabled={isBooked}
-                      className="text-xs"
+                      className={`text-xs ${isBooked ? 'opacity-50 cursor-not-allowed bg-muted text-muted-foreground' : 'hover:bg-primary hover:text-primary-foreground cursor-pointer'}`}
                       onClick={() => !isBooked && openAppointmentDialog({ date: selectedDate, time })}
                     >
-                      {time}
+                      {time} {isBooked && '(Ocupado)'}
                     </Button>
                   );
                 })}
