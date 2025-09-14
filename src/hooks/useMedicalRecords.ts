@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
-import { supabase, MedicalRecord } from '@/lib/supabase'
-import { toast } from '@/components/ui/use-toast'
+import { supabase } from '@/integrations/supabase/client'
+import { toast } from '@/hooks/use-toast'
+import type { Tables } from '@/integrations/supabase/types'
+
+type MedicalRecord = Tables<'medical_records'>
 
 export const useMedicalRecords = () => {
   const [records, setRecords] = useState<MedicalRecord[]>([])
@@ -35,7 +38,6 @@ export const useMedicalRecords = () => {
         .from('medical_records')
         .insert([{ 
           ...recordData, 
-          user_id: user.id,
           doctor_id: user.id 
         }])
         .select()

@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
-import { supabase, Appointment } from '@/lib/supabase'
-import { toast } from '@/components/ui/use-toast'
+import { supabase } from '@/integrations/supabase/client'
+import { toast } from '@/hooks/use-toast'
+import type { Tables } from '@/integrations/supabase/types'
+
+type Appointment = Tables<'appointments'>
 
 export const useAppointments = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([])
@@ -27,7 +30,7 @@ export const useAppointments = () => {
     }
   }
 
-  const createAppointment = async (appointmentData: Omit<Appointment, 'id' | 'created_at' | 'doctor_id'>) => {
+  const createAppointment = async (appointmentData: Omit<Appointment, 'id' | 'created_at' | 'doctor_id' | 'patient_id'>) => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Usuario no autenticado')
@@ -36,8 +39,8 @@ export const useAppointments = () => {
         .from('appointments')
         .insert([{ 
           ...appointmentData, 
-          user_id: user.id,
-          doctor_id: user.id 
+          doctor_id: user.id,
+          patient_id: null
         }])
         .select()
         .single()
