@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAppointments } from "@/hooks/useAppointments";
+import { PatientSelector } from "@/components/PatientSelector";
 
 // Esquema de validación para nueva cita
 const newAppointmentSchema = z.object({
@@ -28,6 +29,7 @@ type NewAppointmentForm = z.infer<typeof newAppointmentSchema>;
 const AppointmentManager = () => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedPatientPhone, setSelectedPatientPhone] = useState("");
   const { appointments, loading, createAppointment } = useAppointments();
 
   const form = useForm<NewAppointmentForm>({
@@ -41,6 +43,32 @@ const AppointmentManager = () => {
       notes: "",
     },
   });
+
+  // Función para abrir el diálogo con datos preconfigurados
+  const openAppointmentDialog = (prefilledData?: { date?: string; time?: string }) => {
+    if (prefilledData) {
+      form.reset({
+        patient_name: "",
+        patient_phone: "",
+        date: prefilledData.date || selectedDate,
+        time: prefilledData.time || "",
+        consultation_type: "",
+        notes: "",
+      });
+    }
+    setIsDialogOpen(true);
+  };
+
+  // Manejar selección de paciente
+  const handlePatientSelect = (patient: { name: string; phone: string }) => {
+    setSelectedPatientPhone(patient.phone);
+    form.setValue("patient_phone", patient.phone);
+  };
+
+  // Actualizar fecha en el formulario cuando cambia la fecha seleccionada
+  useEffect(() => {
+    form.setValue("date", selectedDate);
+  }, [selectedDate, form]);
 
   const onSubmit = async (data: NewAppointmentForm) => {
     try {
@@ -102,7 +130,7 @@ const AppointmentManager = () => {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="flex items-center space-x-2">
+            <Button className="flex items-center space-x-2" onClick={() => openAppointmentDialog()}>
               <Plus className="w-4 h-4" />
               <span>Nueva Cita</span>
             </Button>
@@ -120,7 +148,12 @@ const AppointmentManager = () => {
                     <FormItem>
                       <FormLabel>Nombre del Paciente</FormLabel>
                       <FormControl>
-                        <Input placeholder="Nombre completo" {...field} />
+                        <PatientSelector
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          onPatientSelect={handlePatientSelect}
+                          placeholder="Buscar y seleccionar paciente..."
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -277,6 +310,7 @@ const AppointmentManager = () => {
                       size="sm"
                       disabled={isBooked}
                       className="text-xs"
+                      onClick={() => !isBooked && openAppointmentDialog({ date: selectedDate, time })}
                     >
                       {time}
                     </Button>
@@ -345,7 +379,7 @@ const AppointmentManager = () => {
                 <Button 
                   className="mt-4" 
                   variant="outline"
-                  onClick={() => setIsDialogOpen(true)}
+                  onClick={() => openAppointmentDialog()}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Agendar Primera Cita
