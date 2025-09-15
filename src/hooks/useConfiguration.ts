@@ -159,7 +159,9 @@ export const useConfiguration = () => {
 
   const isWorkingDay = (date: string): boolean => {
     // Since working_days is not in the current schema, default to Monday-Friday
-    const dayOfWeek = new Date(date).getDay()
+    // Using the local timezone for consistent day calculation
+    const localDate = new Date(date + 'T00:00:00')
+    const dayOfWeek = localDate.getDay()
     // 0=Sunday, 1=Monday, ..., 6=Saturday
     // Return true for Monday (1) through Friday (5)
     return dayOfWeek >= 1 && dayOfWeek <= 5

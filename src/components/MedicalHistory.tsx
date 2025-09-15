@@ -386,6 +386,187 @@ const MedicalHistory = () => {
         </Dialog>
       </div>
 
+      {/* Edit Medical Record Dialog */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Historia Clínica</DialogTitle>
+            <DialogDescription>
+              Modifica los datos del registro médico
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+              <FormField
+                control={editForm.control}
+                name="patient_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre del Paciente</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        disabled
+                        className="bg-muted"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={editForm.control}
+                name="consultation_type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de consulta</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar tipo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Consulta General">Consulta General</SelectItem>
+                        <SelectItem value="Urgencia">Urgencia</SelectItem>
+                        <SelectItem value="Control">Control</SelectItem>
+                        <SelectItem value="Especialista">Especialista</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={editForm.control}
+                name="symptoms"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Síntomas</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Descripción de síntomas presentados"
+                        rows={3}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={editForm.control}
+                name="diagnosis"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Diagnóstico</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Diagnóstico principal"
+                        rows={2}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={editForm.control}
+                name="treatment"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tratamiento</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Tratamiento prescrito"
+                        rows={3}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={editForm.control}
+                name="medications"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Medicamentos</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Medicamentos prescritos"
+                        rows={2}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={editForm.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notas adicionales</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Observaciones y notas adicionales"
+                        rows={3}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={editForm.control}
+                name="follow_up_date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Fecha de seguimiento</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="flex justify-end gap-2 pt-4">
+                <Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={editForm.formState.isSubmitting}>
+                  {editForm.formState.isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Actualizando...
+                    </>
+                  ) : (
+                    'Actualizar Historia'
+                  )}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
       {/* Filters and Search */}
       <Card>
         <CardContent className="pt-6">

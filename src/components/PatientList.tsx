@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,12 +8,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Plus, Phone, Mail, Calendar, Eye, Loader2, Edit } from "lucide-react";
+import { Search, Plus, Phone, Mail, Calendar, Eye, Loader2, Edit, FileText, User } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { usePatients } from "@/hooks/usePatients";
+import { useMedicalRecords } from "@/hooks/useMedicalRecords";
 import { Patient } from "@/lib/supabase";
+import type { Tables } from "@/integrations/supabase/types";
+
+type MedicalRecord = Tables<'medical_records'>;
 
 // Esquema de validación para nuevo paciente
 const newPatientSchema = z.object({
@@ -37,7 +42,10 @@ const PatientList = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const { patients, loading, createPatient, updatePatient } = usePatients();
+  const { records: allRecords, loading: recordsLoading } = useMedicalRecords();
 
   const form = useForm<NewPatientForm>({
     resolver: zodResolver(newPatientSchema),
@@ -118,6 +126,16 @@ const PatientList = () => {
     });
     setIsEditDialogOpen(true);
   };
+
+  const handleViewHistory = (patient: Patient) => {
+    setSelectedPatient(patient);
+    setIsHistoryDialogOpen(true);
+  };
+
+  // Get medical records for selected patient
+  const patientRecords = selectedPatient 
+    ? allRecords.filter(record => record.patient_id === selectedPatient.id)
+    : [];
 
   const onEditSubmit = async (data: NewPatientForm) => {
     if (!editingPatient) return;
@@ -640,6 +658,102 @@ const PatientList = () => {
             </Form>
           </DialogContent>
         </Dialog>
+      
+        {/* Patient History Dialog */}
+        <Dialog open={isHistoryDialogOpen} onOpenChange={setIsHistoryDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <User className="w-5 h-5" />
+                Historia Clínica - {selectedPatient?.name}
+              </DialogTitle>
+            </DialogHeader>
+                
+            <div className="space-y-4">
+              {recordsLoading ? (
+                <div className="flex items-center justify-center h-32">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+              ) : patientRecords.length === 0 ? (
+                <div className="text-center py-8">
+                  <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-foreground mb-2">
+                    No hay historias clínicas
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Este paciente no tiene registros médicos aún.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid gap-4">
+                  {patientRecords
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    .map((record) => (
+                      <Card key={record.id} className="hover:shadow-sm transition-shadow">
+                        <CardContent className="pt-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline">
+                                {record.consultation_type}
+                              </Badge>
+                              <span className="text-sm text-muted-foreground">
+                                {new Date(record.date).toLocaleDateString('es-ES')}
+                              </span>
+                            </div>
+                          </div>
+                              
+                          {record.diagnosis && (
+                            <div className="mb-2">
+                              <h4 className="font-medium text-sm text-foreground mb-1">Diagnóstico</h4>
+                              <p className="text-sm text-muted-foreground">{record.diagnosis}</p>
+                            </div>
+                          )}
+                              
+                          {record.symptoms && (
+                            <div className="mb-2">
+                              <h4 className="font-medium text-sm text-foreground mb-1">Síntomas</h4>
+                              <p className="text-sm text-muted-foreground">{record.symptoms}</p>
+                            </div>
+                          )}
+                              
+                          {record.treatment && (
+                            <div className="mb-2">
+                              <h4 className="font-medium text-sm text-foreground mb-1">Tratamiento</h4>
+                              <p className="text-sm text-muted-foreground">{record.treatment}</p>
+                            </div>
+                          )}
+                              
+                          {record.medications && (
+                            <div className="mb-2">
+                              <h4 className="font-medium text-sm text-foreground mb-1">Medicamentos</h4>
+                              <p className="text-sm text-muted-foreground">{record.medications}</p>
+                            </div>
+                          )}
+                              
+                          {record.notes && (
+                            <div className="mb-2">
+                              <h4 className="font-medium text-sm text-foreground mb-1">Notas</h4>
+                              <p className="text-sm text-muted-foreground">{record.notes}</p>
+                            </div>
+                          )}
+                              
+                          {record.follow_up_date && (
+                            <div>
+                              <h4 className="font-medium text-sm text-foreground mb-1">Fecha de seguimiento</h4>
+                              <p className="text-sm text-muted-foreground">
+                                {new Date(record.follow_up_date).toLocaleDateString('es-ES')}
+                              </p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))
+                  }
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Card>
@@ -701,7 +815,12 @@ const PatientList = () => {
                   </div>
                   
                   <div className="flex items-center space-x-2">
-                    <Button variant="outline" size="sm" className="flex items-center space-x-1">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex items-center space-x-1"
+                      onClick={() => handleViewHistory(patient)}
+                    >
                       <Eye className="w-4 h-4" />
                       <span>Ver Historia</span>
                     </Button>
