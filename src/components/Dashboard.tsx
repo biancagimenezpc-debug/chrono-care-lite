@@ -1,35 +1,112 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Calendar, FileText, Activity } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Users, Calendar, FileText, Activity, Loader2 } from "lucide-react";
+import { usePatients } from "@/hooks/usePatients";
+import { useAppointments } from "@/hooks/useAppointments";
+import { useMedicalRecords } from "@/hooks/useMedicalRecords";
+import { useToast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
+  const { toast } = useToast();
+  const { patients, loading: patientsLoading } = usePatients();
+  const { appointments, loading: appointmentsLoading } = useAppointments();
+  const { records: medicalRecords, loading: recordsLoading } = useMedicalRecords();
+  const [navigationAction, setNavigationAction] = useState<string | null>(null);
+
+  // Calculate today's appointments
+  const today = new Date().toISOString().split('T')[0];
+  const todayAppointments = appointments.filter(apt => apt.date === today);
+  const pendingAppointments = todayAppointments.filter(apt => apt.status === 'programada' || apt.status === 'confirmada');
+  const activeConsultations = appointments.filter(apt => apt.status === 'confirmada').length;
+
+  // Calculate recent activity
+  const thisWeekRecords = medicalRecords.filter(record => {
+    const recordDate = new Date(record.created_at || record.date);
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    return recordDate >= weekAgo;
+  });
+
+  const thisMonthPatients = patients.filter(patient => {
+    const patientDate = new Date(patient.created_at!);
+    const monthAgo = new Date();
+    monthAgo.setDate(monthAgo.getDate() - 30);
+    return patientDate >= monthAgo;
+  });
+
+  const handleCardClick = (type: string) => {
+    setNavigationAction(type);
+    toast({
+      title: "Navegación",
+      description: `Navegando a ${type}...`,
+    });
+    
+    // Simulate navigation - in a real app, you'd use a router
+    setTimeout(() => {
+      setNavigationAction(null);
+      switch(type) {
+        case 'patients':
+          window.location.hash = '#/patients';
+          break;
+        case 'appointments':
+          window.location.hash = '#/appointments';
+          break;
+        case 'records':
+          window.location.hash = '#/medical-history';
+          break;
+        case 'consultations':
+          window.location.hash = '#/appointments';
+          break;
+      }
+    }, 1000);
+  };
+
+  const loading = patientsLoading || appointmentsLoading || recordsLoading;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
   const stats = [
     {
       title: "Pacientes Registrados",
-      value: "347",
+      value: patients.length.toString(),
       icon: Users,
-      trend: "+12% este mes",
-      color: "text-primary"
+      trend: `+${thisMonthPatients.length} este mes`,
+      color: "text-primary",
+      clickable: true,
+      type: "patients"
     },
     {
       title: "Citas Hoy",
-      value: "28",
+      value: todayAppointments.length.toString(),
       icon: Calendar,
-      trend: "6 pendientes",
-      color: "text-accent"
+      trend: `${pendingAppointments.length} pendientes`,
+      color: "text-accent",
+      clickable: true,
+      type: "appointments"
     },
     {
       title: "Historias Clínicas",
-      value: "1,247",
+      value: medicalRecords.length.toString(),
       icon: FileText,
-      trend: "+8 esta semana",
-      color: "text-success"
+      trend: `+${thisWeekRecords.length} esta semana`,
+      color: "text-success",
+      clickable: true,
+      type: "records"
     },
     {
       title: "Consultas Activas",
-      value: "15",
+      value: activeConsultations.toString(),
       icon: Activity,
       trend: "En curso",
-      color: "text-warning"
+      color: "text-warning",
+      clickable: true,
+      type: "consultations"
     }
   ];
 
@@ -43,13 +120,24 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat) => {
           const Icon = stat.icon;
+          const isLoading = navigationAction === stat.type;
           return (
-            <Card key={stat.title} className="hover:shadow-lg transition-shadow duration-200">
+            <Card 
+              key={stat.title} 
+              className={`hover:shadow-lg transition-all duration-200 ${
+                stat.clickable ? 'cursor-pointer hover:scale-105' : ''
+              }`}
+              onClick={() => stat.clickable && handleCardClick(stat.type)}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   {stat.title}
                 </CardTitle>
-                <Icon className={`h-5 w-5 ${stat.color}`} />
+                {isLoading ? (
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                ) : (
+                  <Icon className={`h-5 w-5 ${stat.color}`} />
+                )}
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-foreground">{stat.value}</div>
@@ -67,20 +155,21 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[
-                { paciente: "María González", hora: "09:00", tipo: "Consulta General" },
-                { paciente: "Carlos Rodríguez", hora: "10:30", tipo: "Control" },
-                { paciente: "Ana López", hora: "11:15", tipo: "Especialista" },
-                { paciente: "José Martínez", hora: "14:00", tipo: "Urgencia" }
-              ].map((cita, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                  <div>
-                    <p className="font-medium text-foreground">{cita.paciente}</p>
-                    <p className="text-sm text-muted-foreground">{cita.tipo}</p>
+              {todayAppointments.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4">
+                  No hay citas programadas para hoy
+                </p>
+              ) : (
+                todayAppointments.slice(0, 4).map((cita, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div>
+                      <p className="font-medium text-foreground">{cita.patient_name}</p>
+                      <p className="text-sm text-muted-foreground">{cita.consultation_type}</p>
+                    </div>
+                    <span className="text-sm font-medium text-primary">{cita.time}</span>
                   </div>
-                  <span className="text-sm font-medium text-primary">{cita.hora}</span>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -91,21 +180,29 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[
-                { accion: "Nueva historia clínica creada", paciente: "Laura Fernández", tiempo: "Hace 15 min" },
-                { accion: "Cita programada", paciente: "Roberto Silva", tiempo: "Hace 1 hora" },
-                { accion: "Consulta completada", paciente: "Elena Torres", tiempo: "Hace 2 horas" },
-                { accion: "Paciente registrado", paciente: "Miguel Herrera", tiempo: "Hace 3 horas" }
-              ].map((actividad, index) => (
-                <div key={index} className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">{actividad.accion}</p>
-                    <p className="text-sm text-muted-foreground">{actividad.paciente}</p>
-                    <p className="text-xs text-muted-foreground">{actividad.tiempo}</p>
-                  </div>
-                </div>
-              ))}
+              {medicalRecords.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4">
+                  No hay actividad reciente
+                </p>
+              ) : (
+                medicalRecords.slice(0, 4).map((actividad, index) => {
+                  const timeAgo = new Date(actividad.created_at || actividad.date).toLocaleString();
+                  return (
+                    <div key={index} className="flex items-start space-x-3">
+                      <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground">
+                          {actividad.consultation_type} - {actividad.patient_name}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {actividad.diagnosis || 'Consulta realizada'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{timeAgo}</p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </CardContent>
         </Card>

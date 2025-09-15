@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Plus, Phone, Mail, Calendar, Eye, Loader2 } from "lucide-react";
+import { Search, Plus, Phone, Mail, Calendar, Eye, Loader2, Edit } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -35,7 +35,9 @@ type NewPatientForm = z.infer<typeof newPatientSchema>;
 const PatientList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { patients, loading, createPatient } = usePatients();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
+  const { patients, loading, createPatient, updatePatient } = usePatients();
 
   const form = useForm<NewPatientForm>({
     resolver: zodResolver(newPatientSchema),
@@ -75,6 +77,71 @@ const PatientList = () => {
       await createPatient(patientData);
       form.reset();
       setIsDialogOpen(false);
+    } catch (error) {
+      // Error is handled in the hook
+    }
+  };
+
+  const editForm = useForm<NewPatientForm>({
+    resolver: zodResolver(newPatientSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      birth_date: "",
+      gender: "",
+      address: "",
+      emergency_contact: "",
+      emergency_phone: "",
+      insurance: "",
+      medical_conditions: "",
+      medications: "",
+      allergies: "",
+    },
+  });
+
+  const handleEditPatient = (patient: Patient) => {
+    setEditingPatient(patient);
+    editForm.reset({
+      name: patient.name,
+      email: patient.email || "",
+      phone: patient.phone,
+      birth_date: patient.birth_date,
+      gender: patient.gender,
+      address: patient.address || "",
+      emergency_contact: patient.emergency_contact || "",
+      emergency_phone: patient.emergency_phone || "",
+      insurance: patient.insurance || "",
+      medical_conditions: patient.medical_conditions.join(', '),
+      medications: patient.medications.join(', '),
+      allergies: patient.allergies.join(', '),
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const onEditSubmit = async (data: NewPatientForm) => {
+    if (!editingPatient) return;
+    
+    try {
+      const patientData: Partial<Patient> = {
+        name: data.name,
+        email: data.email || undefined,
+        phone: data.phone,
+        birth_date: data.birth_date,
+        gender: data.gender,
+        address: data.address || undefined,
+        emergency_contact: data.emergency_contact || undefined,
+        emergency_phone: data.emergency_phone || undefined,
+        insurance: data.insurance || undefined,
+        medical_conditions: data.medical_conditions ? data.medical_conditions.split(',').map(s => s.trim()) : [],
+        medications: data.medications ? data.medications.split(',').map(s => s.trim()) : [],
+        allergies: data.allergies ? data.allergies.split(',').map(s => s.trim()) : [],
+      };
+      
+      await updatePatient(editingPatient.id, patientData);
+      editForm.reset();
+      setIsEditDialogOpen(false);
+      setEditingPatient(null);
     } catch (error) {
       // Error is handled in the hook
     }
@@ -344,6 +411,235 @@ const PatientList = () => {
             </Form>
           </DialogContent>
         </Dialog>
+
+        {/* Edit Patient Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Editar Paciente</DialogTitle>
+            </DialogHeader>
+            <Form {...editForm}>
+              <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={editForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nombre Completo *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nombre completo" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={editForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="email@ejemplo.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={editForm.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Teléfono *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="+34 123 456 789" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={editForm.control}
+                    name="birth_date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Fecha de Nacimiento *</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={editForm.control}
+                    name="gender"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Género *</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccionar género" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Masculino">Masculino</SelectItem>
+                            <SelectItem value="Femenino">Femenino</SelectItem>
+                            <SelectItem value="Otro">Otro</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={editForm.control}
+                    name="insurance"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Seguro Médico</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nombre del seguro" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={editForm.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dirección</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Dirección completa" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={editForm.control}
+                    name="emergency_contact"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Contacto de Emergencia</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nombre del contacto" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={editForm.control}
+                    name="emergency_phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Teléfono de Emergencia</FormLabel>
+                        <FormControl>
+                          <Input placeholder="+34 123 456 789" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={editForm.control}
+                  name="medical_conditions"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Condiciones Médicas</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Separar por comas: Hipertensión, Diabetes..." 
+                          className="resize-none"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={editForm.control}
+                  name="medications"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Medicamentos Actuales</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Separar por comas: Aspirina, Metformina..." 
+                          className="resize-none"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={editForm.control}
+                  name="allergies"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Alergias</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Separar por comas: Penicilina, Frutos secos..." 
+                          className="resize-none"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex justify-end space-x-2 pt-4">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setIsEditDialogOpen(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={editForm.formState.isSubmitting}>
+                    {editForm.formState.isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Actualizando...
+                      </>
+                    ) : (
+                      'Actualizar Paciente'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Card>
@@ -409,7 +705,14 @@ const PatientList = () => {
                       <Eye className="w-4 h-4" />
                       <span>Ver Historia</span>
                     </Button>
-                    <Button variant="default" size="sm">Editar</Button>
+                    <Button 
+                      variant="default" 
+                      size="sm"
+                      onClick={() => handleEditPatient(patient)}
+                    >
+                      <Edit className="w-4 h-4 mr-1" />
+                      Editar
+                    </Button>
                   </div>
                 </div>
               </div>

@@ -7,11 +7,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, Clock, Plus, User, Phone, Loader2 } from "lucide-react";
+import { Calendar, Clock, Plus, User, Phone, Loader2, RotateCcw, UserCheck } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAppointments } from "@/hooks/useAppointments";
+import { useConfiguration } from "@/hooks/useConfiguration";
 import { PatientSelector } from "@/components/PatientSelector";
 
 // Esquema de validación para nueva cita
@@ -29,8 +30,11 @@ type NewAppointmentForm = z.infer<typeof newAppointmentSchema>;
 const AppointmentManager = () => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isRescheduleDialogOpen, setIsRescheduleDialogOpen] = useState(false);
   const [selectedPatientPhone, setSelectedPatientPhone] = useState("");
-  const { appointments, loading, createAppointment } = useAppointments();
+  const [appointmentToReschedule, setAppointmentToReschedule] = useState<any>(null);
+  const { appointments, loading, createAppointment, updateAppointment } = useAppointments();
+  const { configuration, getAvailableTimeSlots, isWorkingDay } = useConfiguration();
 
   const form = useForm<NewAppointmentForm>({
     resolver: zodResolver(newAppointmentSchema),
@@ -70,6 +74,60 @@ const AppointmentManager = () => {
     form.setValue("date", selectedDate);
   }, [selectedDate, form]);
 
+  // Reschedule form
+  const rescheduleForm = useForm<NewAppointmentForm>({
+    resolver: zodResolver(newAppointmentSchema),
+    defaultValues: {
+      patient_name: "",
+      patient_phone: "",
+      date: selectedDate,
+      time: "",
+      consultation_type: "",
+      notes: "",
+    },
+  });
+
+  const handleReschedule = (appointment: any) => {
+    setAppointmentToReschedule(appointment);
+    rescheduleForm.reset({
+      patient_name: appointment.patient_name,
+      patient_phone: appointment.patient_phone,
+      date: selectedDate,
+      time: "",
+      consultation_type: appointment.consultation_type,
+      notes: appointment.notes || "",
+    });
+    setIsRescheduleDialogOpen(true);
+  };
+
+  const handleAttend = async (appointment: any) => {
+    try {
+      await updateAppointment(appointment.id, {
+        status: 'completada'
+      });
+    } catch (error) {
+      // Error handled in hook
+    }
+  };
+
+  const onRescheduleSubmit = async (data: NewAppointmentForm) => {
+    if (!appointmentToReschedule) return;
+    
+    try {
+      await updateAppointment(appointmentToReschedule.id, {
+        date: data.date!,
+        time: data.time!,
+        consultation_type: data.consultation_type!,
+        notes: data.notes || '',
+      });
+      rescheduleForm.reset();
+      setIsRescheduleDialogOpen(false);
+      setAppointmentToReschedule(null);
+    } catch (error) {
+      // Error is handled in the hook
+    }
+  };
+
   const onSubmit = async (data: NewAppointmentForm) => {
     try {
       const appointmentData = {
@@ -105,19 +163,17 @@ const AppointmentManager = () => {
     }
   };
 
-  const timeSlots = [
-    "08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", 
-    "12:00", "12:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00"
-  ];
-
+  // Get available time slots from configuration
+  const availableTimeSlots = getAvailableTimeSlots(selectedDate);
+  
   // Filter appointments for selected date
   const todayAppointments = appointments.filter(apt => apt.date === selectedDate);
   
-  // Create a set of booked times for faster lookup - normalize to HH:MM format
-  const bookedTimes = new Set(todayAppointments.map(apt => {
-    // Convert HH:MM:SS to HH:MM format for comparison
-    return apt.time.substring(0, 5);
-  }));
+  // Create a set of booked times for faster lookup
+  const bookedTimes = new Set(todayAppointments.map(apt => apt.time));
+  
+  // Check if selected date is a working day
+  const isSelectedDateWorkingDay = isWorkingDay(selectedDate);
 
   if (loading) {
     return (
@@ -208,7 +264,7 @@ const AppointmentManager = () => {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {timeSlots.map((time) => (
+                            {availableTimeSlots.map((time) => (
                               <SelectItem key={time} value={time}>
                                 {time}
                               </SelectItem>
@@ -286,6 +342,149 @@ const AppointmentManager = () => {
             </Form>
           </DialogContent>
         </Dialog>
+
+        {/* Reschedule Dialog */}
+        <Dialog open={isRescheduleDialogOpen} onOpenChange={setIsRescheduleDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Reprogramar Cita</DialogTitle>
+            </DialogHeader>
+            <Form {...rescheduleForm}>
+              <form onSubmit={rescheduleForm.handleSubmit(onRescheduleSubmit)} className="space-y-4">
+                <FormField
+                  control={rescheduleForm.control}
+                  name="patient_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nombre del Paciente</FormLabel>
+                      <FormControl>
+                        <Input {...field} disabled />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={rescheduleForm.control}
+                  name="patient_phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Teléfono</FormLabel>
+                      <FormControl>
+                        <Input {...field} disabled />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={rescheduleForm.control}
+                    name="date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nueva Fecha</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={rescheduleForm.control}
+                    name="time"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nueva Hora</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccionar hora" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {availableTimeSlots.map((time) => (
+                              <SelectItem key={time} value={time}>
+                                {time}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={rescheduleForm.control}
+                  name="consultation_type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de Consulta</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar tipo" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Consulta General">Consulta General</SelectItem>
+                          <SelectItem value="Control">Control</SelectItem>
+                          <SelectItem value="Especialista">Especialista</SelectItem>
+                          <SelectItem value="Urgencia">Urgencia</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={rescheduleForm.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Notas (Opcional)</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Observaciones adicionales..." 
+                          className="resize-none" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex justify-end space-x-2 pt-4">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setIsRescheduleDialogOpen(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={rescheduleForm.formState.isSubmitting}>
+                    {rescheduleForm.formState.isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Reprogramando...
+                      </>
+                    ) : (
+                      'Reprogramar Cita'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -309,13 +508,7 @@ const AppointmentManager = () => {
               variant="outline" 
               size="sm" 
               className="w-full mt-3"
-              onClick={() => {
-                const today = new Date();
-                const localDate = today.getFullYear() + '-' + 
-                  String(today.getMonth() + 1).padStart(2, '0') + '-' + 
-                  String(today.getDate()).padStart(2, '0');
-                setSelectedDate(localDate);
-              }}
+              onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
             >
               <Calendar className="w-4 h-4 mr-2" />
               Ir a Hoy
@@ -323,23 +516,29 @@ const AppointmentManager = () => {
             
             <div className="mt-6">
               <h4 className="font-medium text-foreground mb-3">Horarios Disponibles</h4>
-              <div className="grid grid-cols-2 gap-2">
-                {timeSlots.map((time) => {
-                  const isBooked = bookedTimes.has(time);
-                  return (
-                    <Button
-                      key={time}
-                      variant={isBooked ? "secondary" : "outline"}
-                      size="sm"
-                      disabled={isBooked}
-                      className={`text-xs ${isBooked ? 'opacity-50 cursor-not-allowed bg-muted text-muted-foreground' : 'hover:bg-primary hover:text-primary-foreground cursor-pointer'}`}
-                      onClick={() => !isBooked && openAppointmentDialog({ date: selectedDate, time })}
-                    >
-                      {time} {isBooked && '(Ocupado)'}
-                    </Button>
-                  );
-                })}
-              </div>
+              {!isSelectedDateWorkingDay ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No es un día laborable
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  {availableTimeSlots.map((time) => {
+                    const isBooked = bookedTimes.has(time);
+                    return (
+                      <Button
+                        key={time}
+                        variant={isBooked ? "secondary" : "outline"}
+                        size="sm"
+                        disabled={isBooked}
+                        className={`text-xs ${isBooked ? 'opacity-50 cursor-not-allowed bg-muted text-muted-foreground' : 'hover:bg-primary hover:text-primary-foreground cursor-pointer'}`}
+                        onClick={() => !isBooked && openAppointmentDialog({ date: selectedDate, time })}
+                      >
+                        {time} {isBooked && '(Ocupado)'}
+                      </Button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -387,8 +586,23 @@ const AppointmentManager = () => {
                     </div>
                     
                     <div className="flex items-center space-x-2">
-                      <Button variant="outline" size="sm">Reprogramar</Button>
-                      <Button variant="default" size="sm">Atender</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleReschedule(appointment)}
+                      >
+                        <RotateCcw className="w-4 h-4 mr-1" />
+                        Reprogramar
+                      </Button>
+                      <Button 
+                        variant="default" 
+                        size="sm"
+                        onClick={() => handleAttend(appointment)}
+                        disabled={appointment.status === 'completada'}
+                      >
+                        <UserCheck className="w-4 h-4 mr-1" />
+                        {appointment.status === 'completada' ? 'Atendido' : 'Atender'}
+                      </Button>
                     </div>
                   </div>
                 </div>

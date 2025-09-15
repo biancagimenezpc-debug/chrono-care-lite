@@ -1,128 +1,196 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from 'react'
+import { supabase } from '@/integrations/supabase/client'
+import { toast } from '@/hooks/use-toast'
 
 export interface Configuration {
-  id?: string;
-  clinic_name?: string;
-  clinic_address?: string;
-  clinic_phone?: string;
-  clinic_email?: string;
-  clinic_description?: string;
-  doctor_name?: string;
-  specialty?: string;
-  license_number?: string;
-  notifications?: boolean;
-  email_reminders?: boolean;
-  sms_reminders?: boolean;
-  appointment_duration?: number;
-  working_hours_start?: string;
-  working_hours_end?: string;
+  id?: string
+  created_at?: string
+  updated_at?: string
+  user_id?: string
+  clinic_name: string
+  clinic_address?: string
+  clinic_phone?: string
+  clinic_email?: string
+  clinic_description?: string
+  doctor_name?: string
+  doctor_specialty?: string
+  doctor_license?: string
+  appointment_duration: number
+  working_hours_start: string
+  working_hours_end: string
+  working_days: string[]
+  notifications_enabled: boolean
+  email_reminders_enabled: boolean
+  sms_reminders_enabled: boolean
+  break_time_start?: string
+  break_time_end?: string
+  is_active: boolean
 }
 
 export const useConfiguration = () => {
-  const [configuration, setConfiguration] = useState<Configuration>({});
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const [configuration, setConfiguration] = useState<Configuration | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  // Fetch user configuration
   const fetchConfiguration = async () => {
     try {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        console.error('No user found');
-        return;
-      }
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Usuario no autenticado')
 
       const { data, error } = await supabase
         .from('configurations')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .single()
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 is "not found" error
-        console.error('Error fetching configuration:', error);
-        return;
+      if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
+        throw error
       }
 
       if (data) {
-        setConfiguration(data);
-      }
-    } catch (error) {
-      console.error('Error fetching configuration:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Save configuration
-  const saveConfiguration = async (configData: Configuration) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        throw new Error('No user authenticated');
-      }
-
-      // Check if configuration exists
-      const { data: existingConfig } = await supabase
-        .from('configurations')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-
-      let result;
-      
-      if (existingConfig) {
-        // Update existing configuration
-        result = await supabase
-          .from('configurations')
-          .update({
-            ...configData,
-            user_id: user.id
-          })
-          .eq('user_id', user.id);
+        setConfiguration(data)
       } else {
-        // Create new configuration
-        result = await supabase
+        // Create default configuration if none exists
+        const defaultConfig: Omit<Configuration, 'id' | 'created_at' | 'updated_at'> = {
+          user_id: user.id,
+          clinic_name: 'MediClinic',
+          clinic_address: '',
+          clinic_phone: '',
+          clinic_email: '',
+          clinic_description: '',
+          doctor_name: '',
+          doctor_specialty: '',
+          doctor_license: '',
+          appointment_duration: 30,
+          working_hours_start: '08:00',
+          working_hours_end: '18:00',
+          working_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+          notifications_enabled: true,
+          email_reminders_enabled: true,
+          sms_reminders_enabled: false,
+          break_time_start: '12:00',
+          break_time_end: '14:00',
+          is_active: true
+        }
+
+        const { data: newConfig, error: createError } = await supabase
           .from('configurations')
-          .insert({
-            ...configData,
-            user_id: user.id
-          });
+          .insert([defaultConfig])
+          .select()
+          .single()
+
+        if (createError) throw createError
+        setConfiguration(newConfig)
       }
-
-      if (result.error) {
-        throw result.error;
-      }
-
-      setConfiguration(prev => ({ ...prev, ...configData }));
-      
+    } catch (error: any) {
+      console.error('Error fetching configuration:', error)
       toast({
-        title: "Configuración guardada",
-        description: "Los cambios se han guardado correctamente en la base de datos.",
-      });
-
-    } catch (error) {
-      console.error('Error saving configuration:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo guardar la configuración. Por favor, intenta nuevamente.",
+        title: "Error al cargar configuración",
+        description: error.message,
         variant: "destructive",
-      });
+      })
+    } finally {
+      setLoading(false)
     }
-  };
+  }
+
+  const updateConfiguration = async (updates: Partial<Configuration>) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Usuario no autenticado')
+
+      if (!configuration?.id) {
+        throw new Error('No hay configuración para actualizar')
+      }
+
+      const { data, error } = await supabase
+        .from('configurations')
+        .update(updates)
+        .eq('id', configuration.id)
+        .eq('user_id', user.id)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      setConfiguration(data)
+      toast({
+        title: "Configuración actualizada",
+        description: "Los cambios se han guardado correctamente",
+      })
+      
+      return data
+    } catch (error: any) {
+      toast({
+        title: "Error al actualizar configuración",
+        description: error.message,
+        variant: "destructive",
+      })
+      throw error
+    }
+  }
+
+  const getAvailableTimeSlots = (date: string): string[] => {
+    if (!configuration) return []
+
+    const slots: string[] = []
+    const startTime = configuration.working_hours_start
+    const endTime = configuration.working_hours_end
+    const duration = configuration.appointment_duration
+    const breakStart = configuration.break_time_start
+    const breakEnd = configuration.break_time_end
+
+    // Convert time strings to minutes since midnight
+    const timeToMinutes = (time: string) => {
+      const [hours, minutes] = time.split(':').map(Number)
+      return hours * 60 + minutes
+    }
+
+    const minutesToTime = (minutes: number) => {
+      const hours = Math.floor(minutes / 60)
+      const mins = minutes % 60
+      return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`
+    }
+
+    const start = timeToMinutes(startTime)
+    const end = timeToMinutes(endTime)
+    const breakStartMin = breakStart ? timeToMinutes(breakStart) : null
+    const breakEndMin = breakEnd ? timeToMinutes(breakEnd) : null
+
+    for (let time = start; time < end; time += duration) {
+      // Skip break time if defined
+      if (breakStartMin && breakEndMin && time >= breakStartMin && time < breakEndMin) {
+        continue
+      }
+      
+      // Make sure we don't go past end time
+      if (time + duration <= end) {
+        slots.push(minutesToTime(time))
+      }
+    }
+
+    return slots
+  }
+
+  const isWorkingDay = (date: string): boolean => {
+    if (!configuration) return false
+
+    const dayOfWeek = new Date(date).getDay()
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+    const dayName = dayNames[dayOfWeek]
+
+    return configuration.working_days.includes(dayName)
+  }
 
   useEffect(() => {
-    fetchConfiguration();
-  }, []);
+    fetchConfiguration()
+  }, [])
 
   return {
     configuration,
     loading,
-    saveConfiguration,
+    updateConfiguration,
+    getAvailableTimeSlots,
+    isWorkingDay,
     refetch: fetchConfiguration
-  };
-};
+  }
+}

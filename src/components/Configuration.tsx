@@ -9,17 +9,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Save, Building2, User, Bell, Clock, Users, Plus, Edit, ToggleLeft, ToggleRight } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Save, Building2, User, Bell, Clock, Users, Plus, ToggleLeft, ToggleRight, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUserManagement } from "@/hooks/useUserManagement";
 import { useConfiguration } from "@/hooks/useConfiguration";
 
 const Configuration = () => {
   const { toast } = useToast();
-  const { users, loading, createUser, updateUser, toggleUserStatus, isAdmin } = useUserManagement();
-  const { configuration, loading: configLoading, saveConfiguration } = useConfiguration();
+  const { users, loading: usersLoading, createUser, updateUser, toggleUserStatus, isAdmin } = useUserManagement();
+  const { configuration, loading: configLoading, updateConfiguration } = useConfiguration();
   const [showCreateUser, setShowCreateUser] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [newUser, setNewUser] = useState({
     email: '',
     password: '',
@@ -28,85 +29,82 @@ const Configuration = () => {
     specialty: '',
     license_number: ''
   });
-  const [clinicSettings, setClinicSettings] = useState({
-    name: "MediClinic",
-    address: "",
-    phone: "",
-    email: "",
-    description: ""
-  });
-
-  const [userSettings, setUserSettings] = useState({
-    doctorName: "",
-    specialty: "",
-    license: ""
-  });
-
-  const [systemSettings, setSystemSettings] = useState({
-    notifications: true,
-    emailReminders: true,
-    smsReminders: false,
-    appointmentDuration: "30",
-    workingHours: {
-      start: "08:00",
-      end: "18:00"
-    }
+  
+  // Local state for form values
+  const [formData, setFormData] = useState({
+    clinic_name: '',
+    clinic_address: '',
+    clinic_phone: '',
+    clinic_email: '',
+    clinic_description: '',
+    doctor_name: '',
+    doctor_specialty: '',
+    doctor_license: '',
+    appointment_duration: 30,
+    working_hours_start: '08:00',
+    working_hours_end: '18:00',
+    working_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+    notifications_enabled: true,
+    email_reminders_enabled: true,
+    sms_reminders_enabled: false,
+    break_time_start: '12:00',
+    break_time_end: '14:00'
   });
 
   // Load settings from Supabase configuration
   useEffect(() => {
-    if (configuration && !configLoading) {
-      if (configuration.clinic_name) {
-        setClinicSettings({
-          name: configuration.clinic_name || "MediClinic",
-          address: configuration.clinic_address || "",
-          phone: configuration.clinic_phone || "",
-          email: configuration.clinic_email || "",
-          description: configuration.clinic_description || ""
-        });
-      }
-      
-      if (configuration.doctor_name) {
-        setUserSettings({
-          doctorName: configuration.doctor_name || "",
-          specialty: configuration.specialty || "",
-          license: configuration.license_number || ""
-        });
-      }
-      
-      setSystemSettings({
-        notifications: configuration.notifications ?? true,
-        emailReminders: configuration.email_reminders ?? true,
-        smsReminders: configuration.sms_reminders ?? false,
-        appointmentDuration: configuration.appointment_duration?.toString() || "30",
-        workingHours: {
-          start: configuration.working_hours_start || "08:00",
-          end: configuration.working_hours_end || "18:00"
-        }
+    if (configuration) {
+      setFormData({
+        clinic_name: configuration.clinic_name || '',
+        clinic_address: configuration.clinic_address || '',
+        clinic_phone: configuration.clinic_phone || '',
+        clinic_email: configuration.clinic_email || '',
+        clinic_description: configuration.clinic_description || '',
+        doctor_name: configuration.doctor_name || '',
+        doctor_specialty: configuration.doctor_specialty || '',
+        doctor_license: configuration.doctor_license || '',
+        appointment_duration: configuration.appointment_duration || 30,
+        working_hours_start: configuration.working_hours_start || '08:00',
+        working_hours_end: configuration.working_hours_end || '18:00',
+        working_days: configuration.working_days || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+        notifications_enabled: configuration.notifications_enabled ?? true,
+        email_reminders_enabled: configuration.email_reminders_enabled ?? true,
+        sms_reminders_enabled: configuration.sms_reminders_enabled ?? false,
+        break_time_start: configuration.break_time_start || '12:00',
+        break_time_end: configuration.break_time_end || '14:00'
       });
     }
-  }, [configuration, configLoading]);
+  }, [configuration]);
 
   const handleSaveSettings = async () => {
-    const configData = {
-      clinic_name: clinicSettings.name,
-      clinic_address: clinicSettings.address,
-      clinic_phone: clinicSettings.phone,
-      clinic_email: clinicSettings.email,
-      clinic_description: clinicSettings.description,
-      doctor_name: userSettings.doctorName,
-      specialty: userSettings.specialty,
-      license_number: userSettings.license,
-      notifications: systemSettings.notifications,
-      email_reminders: systemSettings.emailReminders,
-      sms_reminders: systemSettings.smsReminders,
-      appointment_duration: parseInt(systemSettings.appointmentDuration),
-      working_hours_start: systemSettings.workingHours.start,
-      working_hours_end: systemSettings.workingHours.end
-    };
-    
-    await saveConfiguration(configData);
+    try {
+      setSaving(true);
+      await updateConfiguration(formData);
+    } catch (error) {
+      // Error handled in hook
+    } finally {
+      setSaving(false);
+    }
   };
+
+  const handleWorkingDayChange = (day: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      working_days: checked 
+        ? [...prev.working_days, day]
+        : prev.working_days.filter(d => d !== day)
+    }));
+  };
+
+  const workingDaysOptions = [
+    { value: 'monday', label: 'Lunes' },
+    { value: 'tuesday', label: 'Martes' },
+    { value: 'wednesday', label: 'Miércoles' },
+    { value: 'thursday', label: 'Jueves' },
+    { value: 'friday', label: 'Viernes' },
+    { value: 'saturday', label: 'Sábado' },
+    { value: 'sunday', label: 'Domingo' }
+  ];
 
   const handleCreateUser = async () => {
     try {
@@ -125,6 +123,14 @@ const Configuration = () => {
     }
   };
 
+  if (configLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -134,9 +140,13 @@ const Configuration = () => {
             Gestiona la configuración de tu clínica y preferencias del sistema
           </p>
         </div>
-        <Button onClick={handleSaveSettings} className="flex items-center gap-2">
-          <Save className="w-4 h-4" />
-          Guardar Cambios
+        <Button onClick={handleSaveSettings} className="flex items-center gap-2" disabled={saving || configLoading}>
+          {saving ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Save className="w-4 h-4" />
+          )}
+          {saving ? 'Guardando...' : 'Guardar Cambios'}
         </Button>
       </div>
 
@@ -275,7 +285,7 @@ const Configuration = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {loading ? (
+                {usersLoading ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center">
                       Cargando usuarios...
@@ -342,8 +352,8 @@ const Configuration = () => {
               <Label htmlFor="clinic-name">Nombre de la Clínica</Label>
               <Input
                 id="clinic-name"
-                value={clinicSettings.name}
-                onChange={(e) => setClinicSettings(prev => ({ ...prev, name: e.target.value }))}
+                value={formData.clinic_name}
+                onChange={(e) => setFormData(prev => ({ ...prev, clinic_name: e.target.value }))}
                 placeholder="Nombre de tu clínica"
               />
             </div>
@@ -352,8 +362,8 @@ const Configuration = () => {
               <Label htmlFor="clinic-address">Dirección</Label>
               <Textarea
                 id="clinic-address"
-                value={clinicSettings.address}
-                onChange={(e) => setClinicSettings(prev => ({ ...prev, address: e.target.value }))}
+                value={formData.clinic_address}
+                onChange={(e) => setFormData(prev => ({ ...prev, clinic_address: e.target.value }))}
                 placeholder="Dirección completa de la clínica"
                 rows={3}
               />
@@ -364,8 +374,8 @@ const Configuration = () => {
                 <Label htmlFor="clinic-phone">Teléfono</Label>
                 <Input
                   id="clinic-phone"
-                  value={clinicSettings.phone}
-                  onChange={(e) => setClinicSettings(prev => ({ ...prev, phone: e.target.value }))}
+                  value={formData.clinic_phone}
+                  onChange={(e) => setFormData(prev => ({ ...prev, clinic_phone: e.target.value }))}
                   placeholder="+1 234 567 8900"
                 />
               </div>
@@ -375,8 +385,8 @@ const Configuration = () => {
                 <Input
                   id="clinic-email"
                   type="email"
-                  value={clinicSettings.email}
-                  onChange={(e) => setClinicSettings(prev => ({ ...prev, email: e.target.value }))}
+                  value={formData.clinic_email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, clinic_email: e.target.value }))}
                   placeholder="contacto@clinica.com"
                 />
               </div>
@@ -386,8 +396,8 @@ const Configuration = () => {
               <Label htmlFor="clinic-description">Descripción</Label>
               <Textarea
                 id="clinic-description"
-                value={clinicSettings.description}
-                onChange={(e) => setClinicSettings(prev => ({ ...prev, description: e.target.value }))}
+                value={formData.clinic_description}
+                onChange={(e) => setFormData(prev => ({ ...prev, clinic_description: e.target.value }))}
                 placeholder="Breve descripción de los servicios"
                 rows={3}
               />
@@ -411,8 +421,8 @@ const Configuration = () => {
               <Label htmlFor="doctor-name">Nombre del Doctor</Label>
               <Input
                 id="doctor-name"
-                value={userSettings.doctorName}
-                onChange={(e) => setUserSettings(prev => ({ ...prev, doctorName: e.target.value }))}
+                value={formData.doctor_name}
+                onChange={(e) => setFormData(prev => ({ ...prev, doctor_name: e.target.value }))}
                 placeholder="Dr. Juan Pérez"
               />
             </div>
@@ -420,8 +430,8 @@ const Configuration = () => {
             <div className="space-y-2">
               <Label htmlFor="specialty">Especialidad</Label>
               <Select
-                value={userSettings.specialty}
-                onValueChange={(value) => setUserSettings(prev => ({ ...prev, specialty: value }))}
+                value={formData.doctor_specialty}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, doctor_specialty: value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecciona tu especialidad" />
@@ -443,8 +453,8 @@ const Configuration = () => {
               <Label htmlFor="license">Número de Colegiado</Label>
               <Input
                 id="license"
-                value={userSettings.license}
-                onChange={(e) => setUserSettings(prev => ({ ...prev, license: e.target.value }))}
+                value={formData.doctor_license}
+                onChange={(e) => setFormData(prev => ({ ...prev, doctor_license: e.target.value }))}
                 placeholder="12345"
               />
             </div>
@@ -476,9 +486,9 @@ const Configuration = () => {
                   </div>
                   <Switch
                     id="notifications"
-                    checked={systemSettings.notifications}
+                    checked={formData.notifications_enabled}
                     onCheckedChange={(checked) => 
-                      setSystemSettings(prev => ({ ...prev, notifications: checked }))
+                      setFormData(prev => ({ ...prev, notifications_enabled: checked }))
                     }
                   />
                 </div>
@@ -492,9 +502,9 @@ const Configuration = () => {
                   </div>
                   <Switch
                     id="email-reminders"
-                    checked={systemSettings.emailReminders}
+                    checked={formData.email_reminders_enabled}
                     onCheckedChange={(checked) => 
-                      setSystemSettings(prev => ({ ...prev, emailReminders: checked }))
+                      setFormData(prev => ({ ...prev, email_reminders_enabled: checked }))
                     }
                   />
                 </div>
@@ -508,9 +518,9 @@ const Configuration = () => {
                   </div>
                   <Switch
                     id="sms-reminders"
-                    checked={systemSettings.smsReminders}
+                    checked={formData.sms_reminders_enabled}
                     onCheckedChange={(checked) => 
-                      setSystemSettings(prev => ({ ...prev, smsReminders: checked }))
+                      setFormData(prev => ({ ...prev, sms_reminders_enabled: checked }))
                     }
                   />
                 </div>
@@ -525,9 +535,9 @@ const Configuration = () => {
                 <div className="space-y-2">
                   <Label htmlFor="appointment-duration">Duración predeterminada de cita</Label>
                   <Select
-                    value={systemSettings.appointmentDuration}
+                    value={formData.appointment_duration.toString()}
                     onValueChange={(value) => 
-                      setSystemSettings(prev => ({ ...prev, appointmentDuration: value }))
+                      setFormData(prev => ({ ...prev, appointment_duration: parseInt(value) }))
                     }
                   >
                     <SelectTrigger>
@@ -549,12 +559,9 @@ const Configuration = () => {
                     <Input
                       id="start-time"
                       type="time"
-                      value={systemSettings.workingHours.start}
+                      value={formData.working_hours_start}
                       onChange={(e) => 
-                        setSystemSettings(prev => ({
-                          ...prev,
-                          workingHours: { ...prev.workingHours, start: e.target.value }
-                        }))
+                        setFormData(prev => ({ ...prev, working_hours_start: e.target.value }))
                       }
                     />
                   </div>
@@ -564,14 +571,55 @@ const Configuration = () => {
                     <Input
                       id="end-time"
                       type="time"
-                      value={systemSettings.workingHours.end}
+                      value={formData.working_hours_end}
                       onChange={(e) => 
-                        setSystemSettings(prev => ({
-                          ...prev,
-                          workingHours: { ...prev.workingHours, end: e.target.value }
-                        }))
+                        setFormData(prev => ({ ...prev, working_hours_end: e.target.value }))
                       }
                     />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="break-start">Descanso inicio</Label>
+                    <Input
+                      id="break-start"
+                      type="time"
+                      value={formData.break_time_start}
+                      onChange={(e) => 
+                        setFormData(prev => ({ ...prev, break_time_start: e.target.value }))
+                      }
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="break-end">Descanso fin</Label>
+                    <Input
+                      id="break-end"
+                      type="time"
+                      value={formData.break_time_end}
+                      onChange={(e) => 
+                        setFormData(prev => ({ ...prev, break_time_end: e.target.value }))
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Días laborables</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {workingDaysOptions.map((day) => (
+                      <div key={day.value} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={day.value}
+                          checked={formData.working_days.includes(day.value)}
+                          onCheckedChange={(checked) => handleWorkingDayChange(day.value, checked as boolean)}
+                        />
+                        <Label htmlFor={day.value} className="text-sm">
+                          {day.label}
+                        </Label>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>

@@ -56,69 +56,6 @@ export type Database = {
         }
         Relationships: []
       }
-      configurations: {
-        Row: {
-          appointment_duration: number | null
-          clinic_address: string | null
-          clinic_description: string | null
-          clinic_email: string | null
-          clinic_name: string | null
-          clinic_phone: string | null
-          created_at: string
-          doctor_name: string | null
-          email_reminders: boolean | null
-          id: string
-          license_number: string | null
-          notifications: boolean | null
-          sms_reminders: boolean | null
-          specialty: string | null
-          updated_at: string
-          user_id: string
-          working_hours_end: string | null
-          working_hours_start: string | null
-        }
-        Insert: {
-          appointment_duration?: number | null
-          clinic_address?: string | null
-          clinic_description?: string | null
-          clinic_email?: string | null
-          clinic_name?: string | null
-          clinic_phone?: string | null
-          created_at?: string
-          doctor_name?: string | null
-          email_reminders?: boolean | null
-          id?: string
-          license_number?: string | null
-          notifications?: boolean | null
-          sms_reminders?: boolean | null
-          specialty?: string | null
-          updated_at?: string
-          user_id: string
-          working_hours_end?: string | null
-          working_hours_start?: string | null
-        }
-        Update: {
-          appointment_duration?: number | null
-          clinic_address?: string | null
-          clinic_description?: string | null
-          clinic_email?: string | null
-          clinic_name?: string | null
-          clinic_phone?: string | null
-          created_at?: string
-          doctor_name?: string | null
-          email_reminders?: boolean | null
-          id?: string
-          license_number?: string | null
-          notifications?: boolean | null
-          sms_reminders?: boolean | null
-          specialty?: string | null
-          updated_at?: string
-          user_id?: string
-          working_hours_end?: string | null
-          working_hours_start?: string | null
-        }
-        Relationships: []
-      }
       medical_records: {
         Row: {
           consultation_type: string
