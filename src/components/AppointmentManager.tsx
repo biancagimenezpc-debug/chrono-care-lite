@@ -174,6 +174,27 @@ const AppointmentManager = () => {
   
   // Check if selected date is a working day
   const isSelectedDateWorkingDay = isWorkingDay(selectedDate);
+  
+  // Helper functions for date/time validation
+  const isPastDate = (date: string): boolean => {
+    const today = new Date();
+    const selectedDateObj = new Date(date);
+    // Set both dates to start of day for comparison
+    today.setHours(0, 0, 0, 0);
+    selectedDateObj.setHours(0, 0, 0, 0);
+    return selectedDateObj < today;
+  };
+  
+  const isPastTime = (date: string, time: string): boolean => {
+    const now = new Date();
+    const appointmentDateTime = new Date(`${date}T${time}:00`);
+    return appointmentDateTime <= now;
+  };
+  
+  const isCurrentDate = (date: string): boolean => {
+    const today = new Date().toISOString().split('T')[0];
+    return date === today;
+  };
 
   if (loading) {
     return (
@@ -244,7 +265,11 @@ const AppointmentManager = () => {
                       <FormItem>
                         <FormLabel>Fecha</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <Input 
+                            type="date" 
+                            min={new Date().toISOString().split('T')[0]}
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -264,11 +289,24 @@ const AppointmentManager = () => {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {availableTimeSlots.map((time) => (
-                              <SelectItem key={time} value={time}>
-                                {time}
-                              </SelectItem>
-                            ))}
+                            {availableTimeSlots.map((time) => {
+                              const formDate = form.watch('date');
+                              const isTimeBooked = formDate === selectedDate && bookedTimes.has(time);
+                              const isTimePast = formDate && (isPastDate(formDate) || (isCurrentDate(formDate) && isPastTime(formDate, time)));
+                              const isTimeDisabled = isTimeBooked || isTimePast;
+                              
+                              return (
+                                <SelectItem 
+                                  key={time} 
+                                  value={time}
+                                  disabled={isTimeDisabled}
+                                >
+                                  {time}
+                                  {isTimeBooked && ' (Ocupado)'}
+                                  {isTimePast && !isTimeBooked && ' (Pasado)'}
+                                </SelectItem>
+                              );
+                            })}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -387,7 +425,11 @@ const AppointmentManager = () => {
                       <FormItem>
                         <FormLabel>Nueva Fecha</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <Input 
+                            type="date" 
+                            min={new Date().toISOString().split('T')[0]}
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -407,11 +449,24 @@ const AppointmentManager = () => {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {availableTimeSlots.map((time) => (
-                              <SelectItem key={time} value={time}>
-                                {time}
-                              </SelectItem>
-                            ))}
+                            {availableTimeSlots.map((time) => {
+                              const rescheduleDate = rescheduleForm.watch('date');
+                              const isTimeBooked = rescheduleDate === selectedDate && bookedTimes.has(time);
+                              const isTimePast = rescheduleDate && (isPastDate(rescheduleDate) || (isCurrentDate(rescheduleDate) && isPastTime(rescheduleDate, time)));
+                              const isTimeDisabled = isTimeBooked || isTimePast;
+                              
+                              return (
+                                <SelectItem 
+                                  key={time} 
+                                  value={time}
+                                  disabled={isTimeDisabled}
+                                >
+                                  {time}
+                                  {isTimeBooked && ' (Ocupado)'}
+                                  {isTimePast && !isTimeBooked && ' (Pasado)'}
+                                </SelectItem>
+                              );
+                            })}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -499,6 +554,7 @@ const AppointmentManager = () => {
             <input
               type="date"
               value={selectedDate}
+              min={new Date().toISOString().split('T')[0]}
               onChange={(e) => setSelectedDate(e.target.value)}
               className="w-full p-2 border border-border rounded-md bg-background text-foreground"
             />
@@ -524,16 +580,33 @@ const AppointmentManager = () => {
                 <div className="grid grid-cols-2 gap-2">
                   {availableTimeSlots.map((time) => {
                     const isBooked = bookedTimes.has(time);
+                    const isPast = isPastDate(selectedDate) || (isCurrentDate(selectedDate) && isPastTime(selectedDate, time));
+                    const isDisabled = isBooked || isPast;
+                    
+                    let buttonText = time;
+                    let buttonVariant: "outline" | "secondary" = "outline";
+                    let buttonClass = 'text-xs hover:bg-primary hover:text-primary-foreground cursor-pointer';
+                    
+                    if (isBooked) {
+                      buttonText += ' (Ocupado)';
+                      buttonVariant = "secondary";
+                      buttonClass = 'text-xs opacity-50 cursor-not-allowed bg-muted text-muted-foreground';
+                    } else if (isPast) {
+                      buttonText += ' (Pasado)';
+                      buttonVariant = "secondary";
+                      buttonClass = 'text-xs opacity-50 cursor-not-allowed bg-muted text-muted-foreground';
+                    }
+                    
                     return (
                       <Button
                         key={time}
-                        variant={isBooked ? "secondary" : "outline"}
+                        variant={buttonVariant}
                         size="sm"
-                        disabled={isBooked}
-                        className={`text-xs ${isBooked ? 'opacity-50 cursor-not-allowed bg-muted text-muted-foreground' : 'hover:bg-primary hover:text-primary-foreground cursor-pointer'}`}
-                        onClick={() => !isBooked && openAppointmentDialog({ date: selectedDate, time })}
+                        disabled={isDisabled}
+                        className={buttonClass}
+                        onClick={() => !isDisabled && openAppointmentDialog({ date: selectedDate, time })}
                       >
-                        {time} {isBooked && '(Ocupado)'}
+                        {buttonText}
                       </Button>
                     );
                   })}
