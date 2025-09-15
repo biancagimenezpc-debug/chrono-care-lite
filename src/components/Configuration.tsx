@@ -91,8 +91,8 @@ const Configuration = () => {
     setFormData(prev => ({
       ...prev,
       working_days: checked 
-        ? [...prev.working_days, day]
-        : prev.working_days.filter(d => d !== day)
+        ? [...(prev.working_days || []), day]
+        : (prev.working_days || []).filter(d => d !== day)
     }));
   };
 
@@ -612,7 +612,7 @@ const Configuration = () => {
                       <div key={day.value} className="flex items-center space-x-2">
                         <Checkbox
                           id={day.value}
-                          checked={formData.working_days.includes(day.value)}
+                          checked={(formData.working_days || []).includes(day.value)}
                           onCheckedChange={(checked) => handleWorkingDayChange(day.value, checked as boolean)}
                         />
                         <Label htmlFor={day.value} className="text-sm">

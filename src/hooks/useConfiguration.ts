@@ -130,7 +130,7 @@ export const useConfiguration = () => {
   }
 
   const getAvailableTimeSlots = (date: string): string[] => {
-    if (!configuration) return []
+    if (!configuration || !configuration.working_hours_start || !configuration.working_hours_end || !configuration.appointment_duration) return []
 
     const slots: string[] = []
     const startTime = configuration.working_hours_start
@@ -172,7 +172,7 @@ export const useConfiguration = () => {
   }
 
   const isWorkingDay = (date: string): boolean => {
-    if (!configuration) return false
+    if (!configuration || !configuration.working_days) return false
 
     const dayOfWeek = new Date(date).getDay()
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
