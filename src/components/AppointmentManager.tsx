@@ -14,6 +14,7 @@ import { z } from "zod";
 import { useAppointments } from "@/hooks/useAppointments";
 import { useConfiguration } from "@/hooks/useConfiguration";
 import { PatientSelector } from "@/components/PatientSelector";
+import { toast } from "@/hooks/use-toast";
 
 // Esquema de validación para nueva cita
 const newAppointmentSchema = z.object({
@@ -130,6 +131,21 @@ const AppointmentManager = () => {
 
   const onSubmit = async (data: NewAppointmentForm) => {
     try {
+      // Client-side double booking check
+      const existingAppointment = appointments.find(apt => 
+        apt.date === data.date && 
+        apt.time === data.time
+      );
+      
+      if (existingAppointment) {
+        toast({
+          title: "Horario no disponible",
+          description: `Ya existe una cita programada para ${data.date} a las ${data.time}`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
       const appointmentData = {
         patient_name: data.patient_name!,
         patient_phone: data.patient_phone!,
@@ -199,7 +215,8 @@ const AppointmentManager = () => {
   // Get booked times for any specific date
   const getBookedTimesForDate = (date: string): Set<string> => {
     const appointmentsForDate = appointments.filter(apt => apt.date === date);
-    return new Set(appointmentsForDate.map(apt => apt.time));
+    const bookedTimes = new Set<string>(appointmentsForDate.map(apt => String(apt.time)));
+    return bookedTimes;
   };
 
   if (loading) {

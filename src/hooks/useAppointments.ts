@@ -35,6 +35,21 @@ export const useAppointments = () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Usuario no autenticado')
 
+      // Check for existing appointment at the same date/time
+      const { data: existingAppointments, error: checkError } = await supabase
+        .from('appointments')
+        .select('id, patient_name, time')
+        .eq('date', appointmentData.date)
+        .eq('time', appointmentData.time)
+        .eq('doctor_id', user.id)
+
+      if (checkError) throw checkError
+
+      if (existingAppointments && existingAppointments.length > 0) {
+        const existing = existingAppointments[0]
+        throw new Error(`Ya existe una cita programada para ${appointmentData.date} a las ${appointmentData.time} (Paciente: ${existing.patient_name})`)
+      }
+
       const { data, error } = await supabase
         .from('appointments')
         .insert([{ 
