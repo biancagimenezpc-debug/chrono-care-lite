@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Save, Building2, User, Bell, Clock, Users, Plus, ToggleLeft, ToggleRight, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUserManagement } from "@/hooks/useUserManagement";
@@ -38,17 +37,14 @@ const Configuration = () => {
     clinic_email: '',
     clinic_description: '',
     doctor_name: '',
-    doctor_specialty: '',
-    doctor_license: '',
+    specialty: '',
+    license_number: '',
     appointment_duration: 30,
     working_hours_start: '08:00',
     working_hours_end: '18:00',
-    working_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-    notifications_enabled: true,
-    email_reminders_enabled: true,
-    sms_reminders_enabled: false,
-    break_time_start: '12:00',
-    break_time_end: '14:00'
+    notifications: true,
+    email_reminders: true,
+    sms_reminders: false
   });
 
   // Load settings from Supabase configuration
@@ -61,17 +57,14 @@ const Configuration = () => {
         clinic_email: configuration.clinic_email || '',
         clinic_description: configuration.clinic_description || '',
         doctor_name: configuration.doctor_name || '',
-        doctor_specialty: configuration.doctor_specialty || '',
-        doctor_license: configuration.doctor_license || '',
+        specialty: configuration.specialty || '',
+        license_number: configuration.license_number || '',
         appointment_duration: configuration.appointment_duration || 30,
         working_hours_start: configuration.working_hours_start || '08:00',
         working_hours_end: configuration.working_hours_end || '18:00',
-        working_days: configuration.working_days || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-        notifications_enabled: configuration.notifications_enabled ?? true,
-        email_reminders_enabled: configuration.email_reminders_enabled ?? true,
-        sms_reminders_enabled: configuration.sms_reminders_enabled ?? false,
-        break_time_start: configuration.break_time_start || '12:00',
-        break_time_end: configuration.break_time_end || '14:00'
+        notifications: configuration.notifications ?? true,
+        email_reminders: configuration.email_reminders ?? true,
+        sms_reminders: configuration.sms_reminders ?? false
       });
     }
   }, [configuration]);
@@ -87,24 +80,7 @@ const Configuration = () => {
     }
   };
 
-  const handleWorkingDayChange = (day: string, checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      working_days: checked 
-        ? [...(prev.working_days || []), day]
-        : (prev.working_days || []).filter(d => d !== day)
-    }));
-  };
 
-  const workingDaysOptions = [
-    { value: 'monday', label: 'Lunes' },
-    { value: 'tuesday', label: 'Martes' },
-    { value: 'wednesday', label: 'Miércoles' },
-    { value: 'thursday', label: 'Jueves' },
-    { value: 'friday', label: 'Viernes' },
-    { value: 'saturday', label: 'Sábado' },
-    { value: 'sunday', label: 'Domingo' }
-  ];
 
   const handleCreateUser = async () => {
     try {
@@ -430,8 +406,8 @@ const Configuration = () => {
             <div className="space-y-2">
               <Label htmlFor="specialty">Especialidad</Label>
               <Select
-                value={formData.doctor_specialty}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, doctor_specialty: value }))}
+                value={formData.specialty}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, specialty: value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecciona tu especialidad" />
@@ -453,8 +429,8 @@ const Configuration = () => {
               <Label htmlFor="license">Número de Colegiado</Label>
               <Input
                 id="license"
-                value={formData.doctor_license}
-                onChange={(e) => setFormData(prev => ({ ...prev, doctor_license: e.target.value }))}
+                value={formData.license_number}
+                onChange={(e) => setFormData(prev => ({ ...prev, license_number: e.target.value }))}
                 placeholder="12345"
               />
             </div>
@@ -486,9 +462,9 @@ const Configuration = () => {
                   </div>
                   <Switch
                     id="notifications"
-                    checked={formData.notifications_enabled}
+                    checked={formData.notifications}
                     onCheckedChange={(checked) => 
-                      setFormData(prev => ({ ...prev, notifications_enabled: checked }))
+                      setFormData(prev => ({ ...prev, notifications: checked }))
                     }
                   />
                 </div>
@@ -502,9 +478,9 @@ const Configuration = () => {
                   </div>
                   <Switch
                     id="email-reminders"
-                    checked={formData.email_reminders_enabled}
+                    checked={formData.email_reminders}
                     onCheckedChange={(checked) => 
-                      setFormData(prev => ({ ...prev, email_reminders_enabled: checked }))
+                      setFormData(prev => ({ ...prev, email_reminders: checked }))
                     }
                   />
                 </div>
@@ -518,9 +494,9 @@ const Configuration = () => {
                   </div>
                   <Switch
                     id="sms-reminders"
-                    checked={formData.sms_reminders_enabled}
+                    checked={formData.sms_reminders}
                     onCheckedChange={(checked) => 
-                      setFormData(prev => ({ ...prev, sms_reminders_enabled: checked }))
+                      setFormData(prev => ({ ...prev, sms_reminders: checked }))
                     }
                   />
                 </div>
@@ -579,48 +555,11 @@ const Configuration = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="break-start">Descanso inicio</Label>
-                    <Input
-                      id="break-start"
-                      type="time"
-                      value={formData.break_time_start}
-                      onChange={(e) => 
-                        setFormData(prev => ({ ...prev, break_time_start: e.target.value }))
-                      }
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="break-end">Descanso fin</Label>
-                    <Input
-                      id="break-end"
-                      type="time"
-                      value={formData.break_time_end}
-                      onChange={(e) => 
-                        setFormData(prev => ({ ...prev, break_time_end: e.target.value }))
-                      }
-                    />
-                  </div>
-                </div>
-
                 <div className="space-y-2">
-                  <Label>Días laborables</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {workingDaysOptions.map((day) => (
-                      <div key={day.value} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={day.value}
-                          checked={(formData.working_days || []).includes(day.value)}
-                          onCheckedChange={(checked) => handleWorkingDayChange(day.value, checked as boolean)}
-                        />
-                        <Label htmlFor={day.value} className="text-sm">
-                          {day.label}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
+                  <Label className="text-sm text-muted-foreground">Días laborables</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Actualmente configurado para Lunes a Viernes (8:00 AM - 6:00 PM)
+                  </p>
                 </div>
               </div>
             </div>

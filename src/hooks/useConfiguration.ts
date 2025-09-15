@@ -7,24 +7,20 @@ export interface Configuration {
   created_at?: string
   updated_at?: string
   user_id?: string
-  clinic_name: string
+  clinic_name?: string
   clinic_address?: string
   clinic_phone?: string
   clinic_email?: string
   clinic_description?: string
   doctor_name?: string
-  doctor_specialty?: string
-  doctor_license?: string
+  specialty?: string
+  license_number?: string
   appointment_duration: number
   working_hours_start: string
   working_hours_end: string
-  working_days: string[]
-  notifications_enabled: boolean
-  email_reminders_enabled: boolean
-  sms_reminders_enabled: boolean
-  break_time_start?: string
-  break_time_end?: string
-  is_active: boolean
+  notifications: boolean
+  email_reminders: boolean
+  sms_reminders: boolean
 }
 
 export const useConfiguration = () => {
@@ -59,18 +55,14 @@ export const useConfiguration = () => {
           clinic_email: '',
           clinic_description: '',
           doctor_name: '',
-          doctor_specialty: '',
-          doctor_license: '',
+          specialty: '',
+          license_number: '',
           appointment_duration: 30,
           working_hours_start: '08:00',
           working_hours_end: '18:00',
-          working_days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-          notifications_enabled: true,
-          email_reminders_enabled: true,
-          sms_reminders_enabled: false,
-          break_time_start: '12:00',
-          break_time_end: '14:00',
-          is_active: true
+          notifications: true,
+          email_reminders: true,
+          sms_reminders: false
         }
 
         console.log('Creating default configuration:', defaultConfig)
@@ -139,8 +131,6 @@ export const useConfiguration = () => {
     const startTime = configuration.working_hours_start
     const endTime = configuration.working_hours_end
     const duration = configuration.appointment_duration
-    const breakStart = configuration.break_time_start
-    const breakEnd = configuration.break_time_end
 
     // Convert time strings to minutes since midnight
     const timeToMinutes = (time: string) => {
@@ -156,15 +146,8 @@ export const useConfiguration = () => {
 
     const start = timeToMinutes(startTime)
     const end = timeToMinutes(endTime)
-    const breakStartMin = breakStart ? timeToMinutes(breakStart) : null
-    const breakEndMin = breakEnd ? timeToMinutes(breakEnd) : null
 
     for (let time = start; time < end; time += duration) {
-      // Skip break time if defined
-      if (breakStartMin && breakEndMin && time >= breakStartMin && time < breakEndMin) {
-        continue
-      }
-      
       // Make sure we don't go past end time
       if (time + duration <= end) {
         slots.push(minutesToTime(time))
@@ -175,18 +158,11 @@ export const useConfiguration = () => {
   }
 
   const isWorkingDay = (date: string): boolean => {
-    if (!configuration || !configuration.working_days) {
-      console.log('No configuration or working_days:', { configuration: !!configuration, working_days: configuration?.working_days })
-      return false
-    }
-
+    // Since working_days is not in the current schema, default to Monday-Friday
     const dayOfWeek = new Date(date).getDay()
-    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
-    const dayName = dayNames[dayOfWeek]
-
-    console.log('Checking working day:', { date, dayOfWeek, dayName, working_days: configuration.working_days, isWorking: configuration.working_days.includes(dayName) })
-
-    return configuration.working_days.includes(dayName)
+    // 0=Sunday, 1=Monday, ..., 6=Saturday
+    // Return true for Monday (1) through Friday (5)
+    return dayOfWeek >= 1 && dayOfWeek <= 5
   }
 
   useEffect(() => {
