@@ -216,6 +216,13 @@ const AppointmentManager = () => {
   const getBookedTimesForDate = (date: string): Set<string> => {
     const appointmentsForDate = appointments.filter(apt => apt.date === date);
     const bookedTimes = new Set<string>(appointmentsForDate.map(apt => String(apt.time)));
+    
+    // Debug: Log when we have booked appointments
+    if (appointmentsForDate.length > 0) {
+      console.log(`Found ${appointmentsForDate.length} appointments for ${date}:`, appointmentsForDate);
+      console.log(`Booked times:`, Array.from(bookedTimes));
+    }
+    
     return bookedTimes;
   };
 
@@ -604,7 +611,8 @@ const AppointmentManager = () => {
               ) : (
                 <div className="grid grid-cols-2 gap-2">
                   {availableTimeSlots.map((time) => {
-                    const isBooked = bookedTimes.has(time);
+                    const bookedTimesForSelectedDate = getBookedTimesForDate(selectedDate);
+                    const isBooked = bookedTimesForSelectedDate.has(time);
                     const isPast = isPastDate(selectedDate) || (isCurrentDate(selectedDate) && isPastTime(selectedDate, time));
                     const isDisabled = isBooked || isPast;
                     
