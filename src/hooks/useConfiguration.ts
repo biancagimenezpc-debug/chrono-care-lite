@@ -47,6 +47,7 @@ export const useConfiguration = () => {
       }
 
       if (data) {
+        console.log('Configuration loaded:', data)
         setConfiguration(data)
       } else {
         // Create default configuration if none exists
@@ -72,6 +73,8 @@ export const useConfiguration = () => {
           is_active: true
         }
 
+        console.log('Creating default configuration:', defaultConfig)
+        
         const { data: newConfig, error: createError } = await supabase
           .from('configurations')
           .insert([defaultConfig])
@@ -172,11 +175,16 @@ export const useConfiguration = () => {
   }
 
   const isWorkingDay = (date: string): boolean => {
-    if (!configuration || !configuration.working_days) return false
+    if (!configuration || !configuration.working_days) {
+      console.log('No configuration or working_days:', { configuration: !!configuration, working_days: configuration?.working_days })
+      return false
+    }
 
     const dayOfWeek = new Date(date).getDay()
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
     const dayName = dayNames[dayOfWeek]
+
+    console.log('Checking working day:', { date, dayOfWeek, dayName, working_days: configuration.working_days, isWorking: configuration.working_days.includes(dayName) })
 
     return configuration.working_days.includes(dayName)
   }

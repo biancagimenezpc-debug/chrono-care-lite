@@ -9,7 +9,7 @@ import { usePatients } from "@/hooks/usePatients";
 interface PatientSelectorProps {
   value: string;
   onValueChange: (value: string) => void;
-  onPatientSelect?: (patient: { name: string; phone: string }) => void;
+  onPatientSelect?: (patient: { id: string; name: string; phone: string }) => void;
   placeholder?: string;
 }
 
@@ -29,6 +29,7 @@ export const PatientSelector = ({
     if (patient) {
       onValueChange(patient.name);
       onPatientSelect?.({ 
+        id: patient.id,
         name: patient.name, 
         phone: patient.phone || "" 
       });
