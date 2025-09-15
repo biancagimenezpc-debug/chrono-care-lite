@@ -181,7 +181,6 @@ const AppointmentManager = () => {
 
   // Get available time slots from configuration
   const availableTimeSlots = getAvailableTimeSlots(selectedDate);
-  console.log('Available time slots:', availableTimeSlots);
   
   // Filter appointments for selected date
   const todayAppointments = appointments.filter(apt => apt.date === selectedDate);
@@ -215,27 +214,15 @@ const AppointmentManager = () => {
   
   // Get booked times for any specific date
   const getBookedTimesForDate = (date: string): Set<string> => {
-    console.log(`\n=== DEBUGGING getBookedTimesForDate for ${date} ===`);
-    console.log('All appointments:', appointments.map(apt => ({id: apt.id, date: apt.date, time: apt.time, patient: apt.patient_name})));
-    
-    const appointmentsForDate = appointments.filter(apt => {
-      const matches = apt.date === date;
-      console.log(`Date comparison: '${apt.date}' === '${date}' = ${matches}`);
-      return matches;
-    });
-    
-    console.log(`Found ${appointmentsForDate.length} appointments for ${date}:`, appointmentsForDate.map(apt => ({time: apt.time, patient: apt.patient_name})));
+    const appointmentsForDate = appointments.filter(apt => apt.date === date);
     
     const bookedTimes = new Set<string>();
     appointmentsForDate.forEach(apt => {
       const originalTime = apt.time;
-      const timeStr = String(apt.time);
-      bookedTimes.add(timeStr);
-      console.log(`Added time: original='${originalTime}' (${typeof originalTime}) -> string='${timeStr}'`);
+      // Normalize time format: remove seconds if present (e.g., '09:00:00' -> '09:00')
+      const normalizedTime = String(originalTime).substring(0, 5);
+      bookedTimes.add(normalizedTime);
     });
-    
-    console.log(`Final booked times set for ${date}:`, Array.from(bookedTimes));
-    console.log('=== END DEBUG ===\n');
     
     return bookedTimes;
   };
@@ -625,19 +612,10 @@ const AppointmentManager = () => {
               ) : (
                 <div className="grid grid-cols-2 gap-2">
                   {availableTimeSlots.map((time) => {
-                    console.log(`\n--- Processing time slot: '${time}' (${typeof time}) ---`);
                     const bookedTimesForSelectedDate = getBookedTimesForDate(selectedDate);
-                    console.log(`Available time slots:`, availableTimeSlots);
-                    console.log(`Booked times for comparison:`, Array.from(bookedTimesForSelectedDate));
-                    console.log(`Checking if '${time}' is in booked times...`);
-                    
                     const isBooked = bookedTimesForSelectedDate.has(time);
-                    console.log(`Result: isBooked = ${isBooked}`);
-                    
                     const isPast = isPastDate(selectedDate) || (isCurrentDate(selectedDate) && isPastTime(selectedDate, time));
                     const isDisabled = isBooked || isPast;
-                    
-                    console.log(`Time slot ${time}: isBooked=${isBooked}, isPast=${isPast}, isDisabled=${isDisabled}`);
                     
                     let buttonText = time;
                     let buttonVariant: "outline" | "secondary" = "outline";
@@ -647,14 +625,10 @@ const AppointmentManager = () => {
                       buttonText += ' (Ocupado)';
                       buttonVariant = "secondary";
                       buttonClass = 'text-xs opacity-50 cursor-not-allowed bg-muted text-muted-foreground';
-                      console.log(`Time ${time} marked as OCUPADO`);
                     } else if (isPast) {
                       buttonText += ' (Pasado)';
                       buttonVariant = "secondary";
                       buttonClass = 'text-xs opacity-50 cursor-not-allowed bg-muted text-muted-foreground';
-                      console.log(`Time ${time} marked as PASADO`);
-                    } else {
-                      console.log(`Time ${time} marked as AVAILABLE`);
                     }
                     
                     return (
