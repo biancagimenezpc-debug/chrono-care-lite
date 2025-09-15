@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Home, Users, Calendar, FileText, Settings, LogOut } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Home, Users, Calendar, FileText, Settings, LogOut, Menu } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface NavigationProps {
   activeTab: string;
@@ -9,6 +12,8 @@ interface NavigationProps {
 
 const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
   const { user, signOut } = useAuth();
+  const isMobile = useIsMobile();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: Home },
@@ -22,16 +27,85 @@ const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
     await signOut();
   };
 
+  const handleMobileNavigation = (tab: string) => {
+    onTabChange(tab);
+    setIsSheetOpen(false);
+  };
+
   return (
     <nav className="bg-card border-b border-border px-6 py-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <FileText className="w-5 h-5 text-primary-foreground" />
+        {/* Mobile Menu Sheet */}
+        {isMobile ? (
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+            <SheetTrigger asChild>
+              <div className="flex items-center space-x-2 cursor-pointer">
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <h1 className="text-xl font-bold text-foreground">MediClinic</h1>
+              </div>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-80">
+              <SheetHeader>
+                <SheetTitle className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-primary-foreground" />
+                  </div>
+                  <span>MediClinic</span>
+                </SheetTitle>
+              </SheetHeader>
+              <div className="mt-8 space-y-4">
+                {/* User Info */}
+                <div className="pb-4 border-b border-border">
+                  <p className="text-sm text-muted-foreground">{user?.email}</p>
+                </div>
+                
+                {/* Navigation Items */}
+                <div className="space-y-2">
+                  {navItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeTab === item.id;
+                    
+                    return (
+                      <Button
+                        key={item.id}
+                        variant={isActive ? "default" : "ghost"}
+                        onClick={() => handleMobileNavigation(item.id)}
+                        className="w-full justify-start flex items-center space-x-3 h-12 px-4"
+                      >
+                        <Icon className="w-5 h-5" />
+                        <span className="text-base">{item.label}</span>
+                      </Button>
+                    );
+                  })}
+                </div>
+                
+                {/* Sign Out Button */}
+                <div className="pt-4 border-t border-border">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleSignOut}
+                    className="w-full justify-start flex items-center space-x-3 h-12 px-4"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    <span className="text-base">Cerrar Sesión</span>
+                  </Button>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+        ) : (
+          /* Desktop Logo */
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <FileText className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <h1 className="text-xl font-bold text-foreground">MediClinic</h1>
           </div>
-          <h1 className="text-xl font-bold text-foreground">MediClinic</h1>
-        </div>
+        )}
         
+        {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-1">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -51,6 +125,7 @@ const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
           })}
         </div>
 
+        {/* Desktop User Actions */}
         <div className="flex items-center space-x-4">
           <span className="text-sm text-muted-foreground hidden md:block">
             {user?.email}
