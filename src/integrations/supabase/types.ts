@@ -56,6 +56,81 @@ export type Database = {
         }
         Relationships: []
       }
+      configurations: {
+        Row: {
+          appointment_duration: number | null
+          break_time_end: string | null
+          break_time_start: string | null
+          clinic_address: string | null
+          clinic_description: string | null
+          clinic_email: string | null
+          clinic_name: string | null
+          clinic_phone: string | null
+          created_at: string
+          doctor_license: string | null
+          doctor_name: string | null
+          doctor_specialty: string | null
+          email_reminders_enabled: boolean | null
+          id: string
+          is_active: boolean | null
+          notifications_enabled: boolean | null
+          sms_reminders_enabled: boolean | null
+          updated_at: string
+          user_id: string | null
+          working_days: string[] | null
+          working_hours_end: string | null
+          working_hours_start: string | null
+        }
+        Insert: {
+          appointment_duration?: number | null
+          break_time_end?: string | null
+          break_time_start?: string | null
+          clinic_address?: string | null
+          clinic_description?: string | null
+          clinic_email?: string | null
+          clinic_name?: string | null
+          clinic_phone?: string | null
+          created_at?: string
+          doctor_license?: string | null
+          doctor_name?: string | null
+          doctor_specialty?: string | null
+          email_reminders_enabled?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          notifications_enabled?: boolean | null
+          sms_reminders_enabled?: boolean | null
+          updated_at?: string
+          user_id?: string | null
+          working_days?: string[] | null
+          working_hours_end?: string | null
+          working_hours_start?: string | null
+        }
+        Update: {
+          appointment_duration?: number | null
+          break_time_end?: string | null
+          break_time_start?: string | null
+          clinic_address?: string | null
+          clinic_description?: string | null
+          clinic_email?: string | null
+          clinic_name?: string | null
+          clinic_phone?: string | null
+          created_at?: string
+          doctor_license?: string | null
+          doctor_name?: string | null
+          doctor_specialty?: string | null
+          email_reminders_enabled?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          notifications_enabled?: boolean | null
+          sms_reminders_enabled?: boolean | null
+          updated_at?: string
+          user_id?: string | null
+          working_days?: string[] | null
+          working_hours_end?: string | null
+          working_hours_start?: string | null
+        }
+        Relationships: []
+      }
       medical_records: {
         Row: {
           consultation_type: string

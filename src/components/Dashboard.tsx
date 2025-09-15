@@ -7,7 +7,11 @@ import { useAppointments } from "@/hooks/useAppointments";
 import { useMedicalRecords } from "@/hooks/useMedicalRecords";
 import { useToast } from "@/hooks/use-toast";
 
-const Dashboard = () => {
+interface DashboardProps {
+  onNavigate?: (tab: string) => void;
+}
+
+const Dashboard = ({ onNavigate }: DashboardProps = {}) => {
   const { toast } = useToast();
   const { patients, loading: patientsLoading } = usePatients();
   const { appointments, loading: appointmentsLoading } = useAppointments();
@@ -42,24 +46,26 @@ const Dashboard = () => {
       description: `Navegando a ${type}...`,
     });
     
-    // Simulate navigation - in a real app, you'd use a router
+    // Use the onNavigate prop to change tabs
     setTimeout(() => {
       setNavigationAction(null);
-      switch(type) {
-        case 'patients':
-          window.location.hash = '#/patients';
-          break;
-        case 'appointments':
-          window.location.hash = '#/appointments';
-          break;
-        case 'records':
-          window.location.hash = '#/medical-history';
-          break;
-        case 'consultations':
-          window.location.hash = '#/appointments';
-          break;
+      if (onNavigate) {
+        switch(type) {
+          case 'patients':
+            onNavigate('pacientes');
+            break;
+          case 'appointments':
+            onNavigate('turnos');
+            break;
+          case 'records':
+            onNavigate('historias');
+            break;
+          case 'consultations':
+            onNavigate('turnos');
+            break;
+        }
       }
-    }, 1000);
+    }, 500);
   };
 
   const loading = patientsLoading || appointmentsLoading || recordsLoading;

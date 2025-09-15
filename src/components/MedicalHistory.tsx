@@ -8,146 +8,183 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Search, FileText, Calendar, User, Eye, Edit, Filter } from "lucide-react";
+import { Plus, Search, FileText, Calendar, User, Eye, Edit, Filter, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useMedicalRecords } from "@/hooks/useMedicalRecords";
+import { usePatients } from "@/hooks/usePatients";
+import { PatientSelector } from "@/components/PatientSelector";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import type { Tables } from "@/integrations/supabase/types";
 
-interface MedicalRecord {
-  id: string;
-  patientId: string;
-  patientName: string;
-  date: string;
-  type: "consulta" | "urgencia" | "control" | "cirugia";
-  diagnosis: string;
-  symptoms: string;
-  treatment: string;
-  notes: string;
-  doctor: string;
-  status: "activo" | "finalizado" | "seguimiento";
-}
+type MedicalRecord = Tables<'medical_records'>;
+
+// Form validation schema
+const medicalRecordSchema = z.object({
+  patient_name: z.string().min(2, "El nombre del paciente es requerido"),
+  consultation_type: z.string().min(1, "El tipo de consulta es requerido"),
+  symptoms: z.string().optional(),
+  diagnosis: z.string().optional(),
+  treatment: z.string().optional(),
+  medications: z.string().optional(),
+  notes: z.string().optional(),
+  follow_up_date: z.string().optional(),
+});
+
+type MedicalRecordForm = z.infer<typeof medicalRecordSchema>;
 
 const MedicalHistory = () => {
   const { toast } = useToast();
+  const { records, loading, createRecord, updateRecord } = useMedicalRecords();
+  const { patients } = usePatients();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
   const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<MedicalRecord | null>(null);
+  const [selectedPatientId, setSelectedPatientId] = useState("");
 
-  // Mock data for medical records
-  const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([
-    {
-      id: "1",
-      patientId: "P001",
-      patientName: "Ana García",
-      date: "2024-01-15",
-      type: "consulta",
-      diagnosis: "Hipertensión arterial",
-      symptoms: "Dolor de cabeza, mareos ocasionales",
-      treatment: "Enalapril 10mg, dieta hiposódica",
-      notes: "Controlar presión arterial semanalmente",
-      doctor: "Dr. Juan Pérez",
-      status: "seguimiento"
-    },
-    {
-      id: "2",
-      patientId: "P002",
-      patientName: "Carlos López",
-      date: "2024-01-10",
-      type: "urgencia",
-      diagnosis: "Fractura de muñeca",
-      symptoms: "Dolor intenso en muñeca derecha post-caída",
-      treatment: "Inmovilización con yeso, analgésicos",
-      notes: "Control radiológico en 4 semanas",
-      doctor: "Dr. María Rodríguez",
-      status: "activo"
-    },
-    {
-      id: "3",
-      patientId: "P003",
-      patientName: "Elena Martín",
-      date: "2024-01-08",
-      type: "control",
-      diagnosis: "Diabetes tipo 2",
-      symptoms: "Asintomática",
-      treatment: "Metformina 850mg, control glucémico",
-      notes: "HbA1c: 7.2%. Mejorar adherencia dietética",
-      doctor: "Dr. Juan Pérez",
-      status: "seguimiento"
-    }
-  ]);
-
-  const [newRecord, setNewRecord] = useState<Partial<MedicalRecord>>({
-    patientName: "",
-    type: "consulta",
-    diagnosis: "",
-    symptoms: "",
-    treatment: "",
-    notes: "",
-    doctor: "Dr. Juan Pérez",
-    status: "activo"
-  });
-
-  const filteredRecords = medicalRecords.filter(record => {
-    const matchesSearch = record.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         record.diagnosis.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = filterType === "all" || record.type === filterType;
-    const matchesStatus = filterStatus === "all" || record.status === filterStatus;
-    
-    return matchesSearch && matchesType && matchesStatus;
-  });
-
-  const handleCreateRecord = () => {
-    if (!newRecord.patientName || !newRecord.diagnosis) {
-      toast({
-        title: "Error",
-        description: "Por favor completa los campos obligatorios",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const record: MedicalRecord = {
-      ...newRecord as MedicalRecord,
-      id: Date.now().toString(),
-      patientId: `P${String(medicalRecords.length + 1).padStart(3, '0')}`,
-      date: new Date().toISOString().split('T')[0]
-    };
-
-    setMedicalRecords(prev => [record, ...prev]);
-    setNewRecord({
-      patientName: "",
-      type: "consulta",
-      diagnosis: "",
+  const form = useForm<MedicalRecordForm>({
+    resolver: zodResolver(medicalRecordSchema),
+    defaultValues: {
+      patient_name: "",
+      consultation_type: "",
       symptoms: "",
+      diagnosis: "",
       treatment: "",
+      medications: "",
       notes: "",
-      doctor: "Dr. Juan Pérez",
-      status: "activo"
-    });
-    setIsCreateModalOpen(false);
+      follow_up_date: "",
+    },
+  });
+
+  const editForm = useForm<MedicalRecordForm>({
+    resolver: zodResolver(medicalRecordSchema),
+    defaultValues: {
+      patient_name: "",
+      consultation_type: "",
+      symptoms: "",
+      diagnosis: "",
+      treatment: "",
+      medications: "",
+      notes: "",
+      follow_up_date: "",
+    },
+  });
+
+  // Handle patient selection
+  const handlePatientSelect = (patient: { id: string; name: string; phone: string }) => {
+    setSelectedPatientId(patient.id);
+    form.setValue("patient_name", patient.name);
+  };
+
+  // Handle edit patient selection  
+  const handleEditPatientSelect = (patient: { id: string; name: string; phone: string }) => {
+    setSelectedPatientId(patient.id);
+    editForm.setValue("patient_name", patient.name);
+  };
+
+  // Filter records
+  const filteredRecords = records.filter(record => {
+    const matchesSearch = record.patient_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (record.diagnosis && record.diagnosis.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesType = filterType === "all" || record.consultation_type === filterType;
     
-    toast({
-      title: "Historia clínica creada",
-      description: "El registro médico se ha guardado correctamente"
+    return matchesSearch && matchesType;
+  });
+
+  const onSubmit = async (data: MedicalRecordForm) => {
+    try {
+      // Find the selected patient
+      const patient = patients.find(p => p.id === selectedPatientId);
+      if (!patient) {
+        toast({
+          title: "Error",
+          description: "Por favor selecciona un paciente válido",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const recordData = {
+        patient_id: patient.id,
+        patient_name: data.patient_name,
+        date: new Date().toISOString().split('T')[0],
+        consultation_type: data.consultation_type,
+        symptoms: data.symptoms || null,
+        diagnosis: data.diagnosis || null,
+        treatment: data.treatment || null,
+        medications: data.medications || null,
+        notes: data.notes || null,
+        follow_up_date: data.follow_up_date || null,
+      };
+
+      await createRecord(recordData);
+      form.reset();
+      setSelectedPatientId("");
+      setIsCreateModalOpen(false);
+    } catch (error) {
+      // Error handled in hook
+    }
+  };
+
+  const onEditSubmit = async (data: MedicalRecordForm) => {
+    if (!editingRecord) return;
+    
+    try {
+      const updates = {
+        consultation_type: data.consultation_type,
+        symptoms: data.symptoms || null,
+        diagnosis: data.diagnosis || null,
+        treatment: data.treatment || null,
+        medications: data.medications || null,
+        notes: data.notes || null,
+        follow_up_date: data.follow_up_date || null,
+      };
+
+      await updateRecord(editingRecord.id, updates);
+      editForm.reset();
+      setEditingRecord(null);
+      setIsEditModalOpen(false);
+    } catch (error) {
+      // Error handled in hook
+    }
+  };
+
+  const handleEdit = (record: MedicalRecord) => {
+    setEditingRecord(record);
+    editForm.reset({
+      patient_name: record.patient_name,
+      consultation_type: record.consultation_type,
+      symptoms: record.symptoms || "",
+      diagnosis: record.diagnosis || "",
+      treatment: record.treatment || "",
+      medications: record.medications || "",
+      notes: record.notes || "",
+      follow_up_date: record.follow_up_date || "",
     });
+    setIsEditModalOpen(true);
   };
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case "consulta": return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
-      case "urgencia": return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
-      case "control": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
-      case "cirugia": return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300";
-      default: return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "activo": return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300";
-      case "seguimiento": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
-      case "finalizado": return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
-      default: return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
+      case "Consulta General":
+      case "consulta": 
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
+      case "Urgencia":
+      case "urgencia": 
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
+      case "Control":
+      case "control": 
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
+      case "Especialista":
+      case "cirugia": 
+        return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300";
+      default: 
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
     }
   };
 
@@ -176,118 +213,175 @@ const MedicalHistory = () => {
               </DialogDescription>
             </DialogHeader>
             
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="patient-name">Nombre del Paciente *</Label>
-                  <Input
-                    id="patient-name"
-                    value={newRecord.patientName}
-                    onChange={(e) => setNewRecord(prev => ({ ...prev, patientName: e.target.value }))}
-                    placeholder="Nombre completo"
-                  />
-                </div>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="patient_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nombre del Paciente *</FormLabel>
+                      <FormControl>
+                        <PatientSelector
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          onPatientSelect={handlePatientSelect}
+                          placeholder="Buscar y seleccionar paciente..."
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
-                <div className="space-y-2">
-                  <Label htmlFor="record-type">Tipo de consulta</Label>
-                  <Select
-                    value={newRecord.type}
-                    onValueChange={(value) => setNewRecord(prev => ({ ...prev, type: value as any }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="consulta">Consulta</SelectItem>
-                      <SelectItem value="urgencia">Urgencia</SelectItem>
-                      <SelectItem value="control">Control</SelectItem>
-                      <SelectItem value="cirugia">Cirugía</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="diagnosis">Diagnóstico *</Label>
-                <Input
-                  id="diagnosis"
-                  value={newRecord.diagnosis}
-                  onChange={(e) => setNewRecord(prev => ({ ...prev, diagnosis: e.target.value }))}
-                  placeholder="Diagnóstico principal"
+                <FormField
+                  control={form.control}
+                  name="consultation_type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de consulta</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar tipo" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Consulta General">Consulta General</SelectItem>
+                          <SelectItem value="Urgencia">Urgencia</SelectItem>
+                          <SelectItem value="Control">Control</SelectItem>
+                          <SelectItem value="Especialista">Especialista</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="symptoms">Síntomas</Label>
-                <Textarea
-                  id="symptoms"
-                  value={newRecord.symptoms}
-                  onChange={(e) => setNewRecord(prev => ({ ...prev, symptoms: e.target.value }))}
-                  placeholder="Descripción de síntomas presentados"
-                  rows={3}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="treatment">Tratamiento</Label>
-                <Textarea
-                  id="treatment"
-                  value={newRecord.treatment}
-                  onChange={(e) => setNewRecord(prev => ({ ...prev, treatment: e.target.value }))}
-                  placeholder="Tratamiento prescrito"
-                  rows={3}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notas adicionales</Label>
-                <Textarea
-                  id="notes"
-                  value={newRecord.notes}
-                  onChange={(e) => setNewRecord(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="Observaciones y notas adicionales"
-                  rows={3}
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="doctor">Doctor</Label>
-                  <Input
-                    id="doctor"
-                    value={newRecord.doctor}
-                    onChange={(e) => setNewRecord(prev => ({ ...prev, doctor: e.target.value }))}
-                    placeholder="Nombre del médico"
-                  />
-                </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="status">Estado</Label>
-                  <Select
-                    value={newRecord.status}
-                    onValueChange={(value) => setNewRecord(prev => ({ ...prev, status: value as any }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="activo">Activo</SelectItem>
-                      <SelectItem value="seguimiento">Seguimiento</SelectItem>
-                      <SelectItem value="finalizado">Finalizado</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <FormField
+                  control={form.control}
+                  name="symptoms"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Síntomas</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          placeholder="Descripción de síntomas presentados"
+                          rows={3}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="diagnosis"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Diagnóstico</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          placeholder="Diagnóstico principal"
+                          rows={2}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="treatment"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tratamiento</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          placeholder="Tratamiento prescrito"
+                          rows={3}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="medications"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Medicamentos</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          placeholder="Medicamentos prescritos"
+                          rows={2}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Notas adicionales</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          placeholder="Observaciones y notas adicionales"
+                          rows={3}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="follow_up_date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fecha de seguimiento</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button type="button" variant="outline" onClick={() => setIsCreateModalOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creando...
+                      </>
+                    ) : (
+                      'Crear Historia'
+                    )}
+                  </Button>
                 </div>
-              </div>
-            </div>
-            
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleCreateRecord}>
-                Crear Historia
-              </Button>
-            </div>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
       </div>
@@ -314,22 +408,10 @@ const MedicalHistory = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos los tipos</SelectItem>
-                  <SelectItem value="consulta">Consulta</SelectItem>
-                  <SelectItem value="urgencia">Urgencia</SelectItem>
-                  <SelectItem value="control">Control</SelectItem>
-                  <SelectItem value="cirugia">Cirugía</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los estados</SelectItem>
-                  <SelectItem value="activo">Activo</SelectItem>
-                  <SelectItem value="seguimiento">Seguimiento</SelectItem>
-                  <SelectItem value="finalizado">Finalizado</SelectItem>
+                  <SelectItem value="Consulta General">Consulta General</SelectItem>
+                  <SelectItem value="Urgencia">Urgencia</SelectItem>
+                  <SelectItem value="Control">Control</SelectItem>
+                  <SelectItem value="Especialista">Especialista</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -346,13 +428,10 @@ const MedicalHistory = () => {
                 <div className="space-y-2 flex-1">
                   <div className="flex items-center gap-3">
                     <h3 className="font-semibold text-lg text-foreground">
-                      {record.patientName}
+                      {record.patient_name}
                     </h3>
-                    <Badge className={getTypeColor(record.type)}>
-                      {record.type.charAt(0).toUpperCase() + record.type.slice(1)}
-                    </Badge>
-                    <Badge className={getStatusColor(record.status)}>
-                      {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                    <Badge className={getTypeColor(record.consultation_type)}>
+                      {record.consultation_type}
                     </Badge>
                   </div>
                   
@@ -361,14 +440,10 @@ const MedicalHistory = () => {
                       <Calendar className="w-4 h-4" />
                       {new Date(record.date).toLocaleDateString('es-ES')}
                     </div>
-                    <div className="flex items-center gap-1">
-                      <User className="w-4 h-4" />
-                      {record.doctor}
-                    </div>
                   </div>
                   
                   <p className="text-foreground font-medium">
-                    <span className="text-muted-foreground">Diagnóstico:</span> {record.diagnosis}
+                    <span className="text-muted-foreground">Diagnóstico:</span> {record.diagnosis || 'No especificado'}
                   </p>
                   
                   {record.symptoms && (
@@ -387,29 +462,28 @@ const MedicalHistory = () => {
                     </DialogTrigger>
                     <DialogContent className="max-w-2xl">
                       <DialogHeader>
-                        <DialogTitle>Historia Clínica - {record.patientName}</DialogTitle>
+                        <DialogTitle>Historia Clínica - {record.patient_name}</DialogTitle>
                         <DialogDescription>
-                          ID: {record.patientId} | Fecha: {new Date(record.date).toLocaleDateString('es-ES')}
+                          ID: {record.id} | Fecha: {new Date(record.date).toLocaleDateString('es-ES')}
                         </DialogDescription>
                       </DialogHeader>
                       
                       <div className="space-y-4">
                         <div className="flex gap-2">
-                          <Badge className={getTypeColor(record.type)}>
-                            {record.type.charAt(0).toUpperCase() + record.type.slice(1)}
-                          </Badge>
-                          <Badge className={getStatusColor(record.status)}>
-                            {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                          <Badge className={getTypeColor(record.consultation_type)}>
+                            {record.consultation_type}
                           </Badge>
                         </div>
                         
                         <Separator />
                         
                         <div className="grid gap-4">
-                          <div>
-                            <h4 className="font-semibold text-foreground mb-2">Diagnóstico</h4>
-                            <p className="text-muted-foreground">{record.diagnosis}</p>
-                          </div>
+                          {record.diagnosis && (
+                            <div>
+                              <h4 className="font-semibold text-foreground mb-2">Diagnóstico</h4>
+                              <p className="text-muted-foreground">{record.diagnosis}</p>
+                            </div>
+                          )}
                           
                           {record.symptoms && (
                             <div>
@@ -425,6 +499,13 @@ const MedicalHistory = () => {
                             </div>
                           )}
                           
+                          {record.medications && (
+                            <div>
+                              <h4 className="font-semibold text-foreground mb-2">Medicamentos</h4>
+                              <p className="text-muted-foreground">{record.medications}</p>
+                            </div>
+                          )}
+                          
                           {record.notes && (
                             <div>
                               <h4 className="font-semibold text-foreground mb-2">Notas adicionales</h4>
@@ -432,16 +513,18 @@ const MedicalHistory = () => {
                             </div>
                           )}
                           
-                          <div>
-                            <h4 className="font-semibold text-foreground mb-2">Médico responsable</h4>
-                            <p className="text-muted-foreground">{record.doctor}</p>
-                          </div>
+                          {record.follow_up_date && (
+                            <div>
+                              <h4 className="font-semibold text-foreground mb-2">Fecha de seguimiento</h4>
+                              <p className="text-muted-foreground">{new Date(record.follow_up_date).toLocaleDateString('es-ES')}</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </DialogContent>
                   </Dialog>
                   
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={() => handleEdit(record)}>
                     <Edit className="w-4 h-4" />
                   </Button>
                 </div>
@@ -459,7 +542,7 @@ const MedicalHistory = () => {
                   No se encontraron historias clínicas
                 </h3>
                 <p className="text-muted-foreground">
-                  {searchTerm || filterType !== "all" || filterStatus !== "all"
+                  {searchTerm || filterType !== "all"
                     ? "Intenta cambiar los filtros de búsqueda"
                     : "Crea la primera historia clínica para comenzar"
                   }

@@ -12,7 +12,7 @@ const Index = () => {
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard":
-        return <Dashboard />;
+        return <Dashboard onNavigate={setActiveTab} />;
       case "pacientes":
         return <PatientList />;
       case "turnos":
@@ -22,7 +22,7 @@ const Index = () => {
       case "configuracion":
         return <Configuration />;
       default:
-        return <Dashboard />;
+        return <Dashboard onNavigate={setActiveTab} />;
     }
   };
 
