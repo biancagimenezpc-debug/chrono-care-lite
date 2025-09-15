@@ -195,6 +195,12 @@ const AppointmentManager = () => {
     const today = new Date().toISOString().split('T')[0];
     return date === today;
   };
+  
+  // Get booked times for any specific date
+  const getBookedTimesForDate = (date: string): Set<string> => {
+    const appointmentsForDate = appointments.filter(apt => apt.date === date);
+    return new Set(appointmentsForDate.map(apt => apt.time));
+  };
 
   if (loading) {
     return (
@@ -291,7 +297,8 @@ const AppointmentManager = () => {
                           <SelectContent>
                             {availableTimeSlots.map((time) => {
                               const formDate = form.watch('date');
-                              const isTimeBooked = formDate === selectedDate && bookedTimes.has(time);
+                              const bookedTimesForFormDate = formDate ? getBookedTimesForDate(formDate) : new Set();
+                              const isTimeBooked = bookedTimesForFormDate.has(time);
                               const isTimePast = formDate && (isPastDate(formDate) || (isCurrentDate(formDate) && isPastTime(formDate, time)));
                               const isTimeDisabled = isTimeBooked || isTimePast;
                               
@@ -451,7 +458,8 @@ const AppointmentManager = () => {
                           <SelectContent>
                             {availableTimeSlots.map((time) => {
                               const rescheduleDate = rescheduleForm.watch('date');
-                              const isTimeBooked = rescheduleDate === selectedDate && bookedTimes.has(time);
+                              const bookedTimesForRescheduleDate = rescheduleDate ? getBookedTimesForDate(rescheduleDate) : new Set();
+                              const isTimeBooked = bookedTimesForRescheduleDate.has(time);
                               const isTimePast = rescheduleDate && (isPastDate(rescheduleDate) || (isCurrentDate(rescheduleDate) && isPastTime(rescheduleDate, time)));
                               const isTimeDisabled = isTimeBooked || isTimePast;
                               
