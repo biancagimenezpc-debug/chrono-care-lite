@@ -112,6 +112,9 @@ const AppointmentManager = () => {
 
   // Filter appointments for selected date
   const todayAppointments = appointments.filter(apt => apt.date === selectedDate);
+  
+  // Create a set of booked times for faster lookup
+  const bookedTimes = new Set(todayAppointments.map(apt => apt.time));
 
   if (loading) {
     return (
@@ -302,7 +305,7 @@ const AppointmentManager = () => {
               <h4 className="font-medium text-foreground mb-3">Horarios Disponibles</h4>
               <div className="grid grid-cols-2 gap-2">
                 {timeSlots.map((time) => {
-                  const isBooked = todayAppointments.some(apt => apt.time === time);
+                  const isBooked = bookedTimes.has(time);
                   return (
                     <Button
                       key={time}

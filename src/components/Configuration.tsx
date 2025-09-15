@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,7 +51,29 @@ const Configuration = () => {
     }
   });
 
+  // Load settings from localStorage on component mount
+  useEffect(() => {
+    const savedClinicSettings = localStorage.getItem('clinicSettings');
+    const savedUserSettings = localStorage.getItem('userSettings');
+    const savedSystemSettings = localStorage.getItem('systemSettings');
+
+    if (savedClinicSettings) {
+      setClinicSettings(JSON.parse(savedClinicSettings));
+    }
+    if (savedUserSettings) {
+      setUserSettings(JSON.parse(savedUserSettings));
+    }
+    if (savedSystemSettings) {
+      setSystemSettings(JSON.parse(savedSystemSettings));
+    }
+  }, []);
+
   const handleSaveSettings = () => {
+    // Save to localStorage for now (could be enhanced to save to database)
+    localStorage.setItem('clinicSettings', JSON.stringify(clinicSettings));
+    localStorage.setItem('userSettings', JSON.stringify(userSettings));
+    localStorage.setItem('systemSettings', JSON.stringify(systemSettings));
+    
     toast({
       title: "Configuración guardada",
       description: "Los cambios se han guardado correctamente.",
