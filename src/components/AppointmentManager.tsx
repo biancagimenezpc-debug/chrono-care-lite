@@ -309,7 +309,13 @@ const AppointmentManager = () => {
               variant="outline" 
               size="sm" 
               className="w-full mt-3"
-              onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+              onClick={() => {
+                const today = new Date();
+                const localDate = today.getFullYear() + '-' + 
+                  String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                  String(today.getDate()).padStart(2, '0');
+                setSelectedDate(localDate);
+              }}
             >
               <Calendar className="w-4 h-4 mr-2" />
               Ir a Hoy
