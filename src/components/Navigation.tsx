@@ -1,9 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Home, Users, Calendar, FileText, Settings, LogOut, Menu } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 interface NavigationProps {
   activeTab: string;
@@ -12,8 +11,19 @@ interface NavigationProps {
 
 const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
   const { user, signOut } = useAuth();
-  const isMobile = useIsMobile();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: Home },
@@ -35,16 +45,20 @@ const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
   return (
     <nav className="bg-card border-b border-border px-6 py-4">
       <div className="flex items-center justify-between">
-        {/* Mobile Menu Sheet */}
+        {/* Logo - Clickable on mobile, static on desktop */}
         {isMobile ? (
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
-              <div className="flex items-center space-x-2 cursor-pointer">
+              <Button 
+                variant="ghost" 
+                className="flex items-center space-x-2 p-0 h-auto hover:bg-transparent"
+              >
                 <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                   <FileText className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <h1 className="text-xl font-bold text-foreground">MediClinic</h1>
-              </div>
+                <Menu className="w-4 h-4 text-muted-foreground" />
+              </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-80">
               <SheetHeader>
@@ -96,7 +110,6 @@ const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
             </SheetContent>
           </Sheet>
         ) : (
-          /* Desktop Logo */
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <FileText className="w-5 h-5 text-primary-foreground" />
