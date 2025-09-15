@@ -115,6 +115,11 @@ const AppointmentManager = () => {
   
   // Create a set of booked times for faster lookup
   const bookedTimes = new Set(todayAppointments.map(apt => apt.time));
+  
+  // Debug logging
+  console.log('Selected date:', selectedDate);
+  console.log('Today appointments:', todayAppointments);
+  console.log('Booked times:', Array.from(bookedTimes));
 
   if (loading) {
     return (
@@ -301,11 +306,23 @@ const AppointmentManager = () => {
               className="w-full p-2 border border-border rounded-md bg-background text-foreground"
             />
             
+            {/* Botón para volver al día actual */}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full mt-3"
+              onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              Ir a Hoy
+            </Button>
+            
             <div className="mt-6">
               <h4 className="font-medium text-foreground mb-3">Horarios Disponibles</h4>
               <div className="grid grid-cols-2 gap-2">
                 {timeSlots.map((time) => {
                   const isBooked = bookedTimes.has(time);
+                  console.log(`Time slot ${time}:`, { isBooked, bookedTimes: Array.from(bookedTimes) });
                   return (
                     <Button
                       key={time}
