@@ -13,10 +13,12 @@ import { Separator } from "@/components/ui/separator";
 import { Save, Building2, User, Bell, Clock, Users, Plus, Edit, ToggleLeft, ToggleRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUserManagement } from "@/hooks/useUserManagement";
+import { useConfiguration } from "@/hooks/useConfiguration";
 
 const Configuration = () => {
   const { toast } = useToast();
   const { users, loading, createUser, updateUser, toggleUserStatus, isAdmin } = useUserManagement();
+  const { configuration, loading: configLoading, saveConfiguration } = useConfiguration();
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [newUser, setNewUser] = useState({
     email: '',
@@ -51,33 +53,59 @@ const Configuration = () => {
     }
   });
 
-  // Load settings from localStorage on component mount
+  // Load settings from Supabase configuration
   useEffect(() => {
-    const savedClinicSettings = localStorage.getItem('clinicSettings');
-    const savedUserSettings = localStorage.getItem('userSettings');
-    const savedSystemSettings = localStorage.getItem('systemSettings');
+    if (configuration && !configLoading) {
+      if (configuration.clinic_name) {
+        setClinicSettings({
+          name: configuration.clinic_name || "MediClinic",
+          address: configuration.clinic_address || "",
+          phone: configuration.clinic_phone || "",
+          email: configuration.clinic_email || "",
+          description: configuration.clinic_description || ""
+        });
+      }
+      
+      if (configuration.doctor_name) {
+        setUserSettings({
+          doctorName: configuration.doctor_name || "",
+          specialty: configuration.specialty || "",
+          license: configuration.license_number || ""
+        });
+      }
+      
+      setSystemSettings({
+        notifications: configuration.notifications ?? true,
+        emailReminders: configuration.email_reminders ?? true,
+        smsReminders: configuration.sms_reminders ?? false,
+        appointmentDuration: configuration.appointment_duration?.toString() || "30",
+        workingHours: {
+          start: configuration.working_hours_start || "08:00",
+          end: configuration.working_hours_end || "18:00"
+        }
+      });
+    }
+  }, [configuration, configLoading]);
 
-    if (savedClinicSettings) {
-      setClinicSettings(JSON.parse(savedClinicSettings));
-    }
-    if (savedUserSettings) {
-      setUserSettings(JSON.parse(savedUserSettings));
-    }
-    if (savedSystemSettings) {
-      setSystemSettings(JSON.parse(savedSystemSettings));
-    }
-  }, []);
-
-  const handleSaveSettings = () => {
-    // Save to localStorage for now (could be enhanced to save to database)
-    localStorage.setItem('clinicSettings', JSON.stringify(clinicSettings));
-    localStorage.setItem('userSettings', JSON.stringify(userSettings));
-    localStorage.setItem('systemSettings', JSON.stringify(systemSettings));
+  const handleSaveSettings = async () => {
+    const configData = {
+      clinic_name: clinicSettings.name,
+      clinic_address: clinicSettings.address,
+      clinic_phone: clinicSettings.phone,
+      clinic_email: clinicSettings.email,
+      clinic_description: clinicSettings.description,
+      doctor_name: userSettings.doctorName,
+      specialty: userSettings.specialty,
+      license_number: userSettings.license,
+      notifications: systemSettings.notifications,
+      email_reminders: systemSettings.emailReminders,
+      sms_reminders: systemSettings.smsReminders,
+      appointment_duration: parseInt(systemSettings.appointmentDuration),
+      working_hours_start: systemSettings.workingHours.start,
+      working_hours_end: systemSettings.workingHours.end
+    };
     
-    toast({
-      title: "Configuración guardada",
-      description: "Los cambios se han guardado correctamente.",
-    });
+    await saveConfiguration(configData);
   };
 
   const handleCreateUser = async () => {

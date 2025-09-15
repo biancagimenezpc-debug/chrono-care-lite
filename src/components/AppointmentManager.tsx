@@ -113,13 +113,11 @@ const AppointmentManager = () => {
   // Filter appointments for selected date
   const todayAppointments = appointments.filter(apt => apt.date === selectedDate);
   
-  // Create a set of booked times for faster lookup
-  const bookedTimes = new Set(todayAppointments.map(apt => apt.time));
-  
-  // Debug logging
-  console.log('Selected date:', selectedDate);
-  console.log('Today appointments:', todayAppointments);
-  console.log('Booked times:', Array.from(bookedTimes));
+  // Create a set of booked times for faster lookup - normalize to HH:MM format
+  const bookedTimes = new Set(todayAppointments.map(apt => {
+    // Convert HH:MM:SS to HH:MM format for comparison
+    return apt.time.substring(0, 5);
+  }));
 
   if (loading) {
     return (
@@ -322,7 +320,6 @@ const AppointmentManager = () => {
               <div className="grid grid-cols-2 gap-2">
                 {timeSlots.map((time) => {
                   const isBooked = bookedTimes.has(time);
-                  console.log(`Time slot ${time}:`, { isBooked, bookedTimes: Array.from(bookedTimes) });
                   return (
                     <Button
                       key={time}
