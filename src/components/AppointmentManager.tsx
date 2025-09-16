@@ -208,8 +208,12 @@ const AppointmentManager = () => {
   
   const isPastTime = (date: string, time: string): boolean => {
     const now = new Date();
+    // Handle both hh:mm and hh:mm:ss formats
+    const timeParts = time.split(':');
+    const hours = parseInt(timeParts[0], 10);
+    const minutes = parseInt(timeParts[1], 10);
+    
     // Create appointment time in local timezone
-    const [hours, minutes] = time.split(':').map(Number);
     const appointmentDateTime = new Date(date + 'T00:00:00');
     appointmentDateTime.setHours(hours, minutes, 0, 0);
     return appointmentDateTime <= now;
@@ -231,7 +235,9 @@ const AppointmentManager = () => {
     appointmentsForDate.forEach(apt => {
       const originalTime = apt.time;
       // Normalize time format: remove seconds if present (e.g., '09:00:00' -> '09:00')
-      const normalizedTime = String(originalTime).substring(0, 5);
+      // Handle both 'HH:MM' and 'HH:MM:SS' formats
+      const timeParts = String(originalTime).split(':');
+      const normalizedTime = `${timeParts[0]}:${timeParts[1]}`;
       bookedTimes.add(normalizedTime);
     });
     
@@ -309,7 +315,12 @@ const AppointmentManager = () => {
                         <FormControl>
                           <Input 
                             type="date" 
-                            min={new Date().toISOString().split('T')[0]}
+                            min={(() => {
+                              const today = new Date();
+                              return today.getFullYear() + '-' + 
+                                String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                                String(today.getDate()).padStart(2, '0');
+                            })()} 
                             {...field} 
                           />
                         </FormControl>
