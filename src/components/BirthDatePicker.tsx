@@ -2,7 +2,6 @@ import * as React from "react"
 import { CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   Popover,
   PopoverContent,
@@ -44,37 +43,18 @@ export function BirthDatePicker({ value, onChange, placeholder = "Seleccionar fe
     }
   }, [value])
 
-  // Update parent when any part changes
+  // Update parent when any part changes but prevent loops
   React.useEffect(() => {
     if (selectedDay && selectedMonth && selectedYear) {
       const dateString = `${selectedYear}-${selectedMonth}-${selectedDay}`
       const date = new Date(dateString)
-      if (!isNaN(date.getTime())) {
+      if (!isNaN(date.getTime()) && dateString !== value) {
         onChange(dateString)
       }
-    } else if (!selectedDay && !selectedMonth && !selectedYear) {
+    } else if (!selectedDay && !selectedMonth && !selectedYear && value) {
       onChange("")
     }
   }, [selectedDay, selectedMonth, selectedYear, onChange])
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value
-    onChange(inputValue)
-    
-    // Parse the input value
-    if (inputValue) {
-      const date = new Date(inputValue)
-      if (!isNaN(date.getTime())) {
-        setSelectedDay(String(date.getDate()).padStart(2, '0'))
-        setSelectedMonth(String(date.getMonth() + 1).padStart(2, '0'))
-        setSelectedYear(String(date.getFullYear()))
-      }
-    } else {
-      setSelectedDay("")
-      setSelectedMonth("")
-      setSelectedYear("")
-    }
-  }
 
   const clearSelection = () => {
     setSelectedDay("")
@@ -135,104 +115,95 @@ export function BirthDatePicker({ value, onChange, placeholder = "Seleccionar fe
   }
 
   return (
-    <div className="flex gap-2">
-      <Input
-        type="date"
-        value={value || ""}
-        onChange={handleInputChange}
-        max={new Date().toISOString().split('T')[0]} // Don't allow future dates
-        className="flex-1"
-      />
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant={"outline"}
-            className={cn(
-              "justify-center text-left font-normal min-w-[40px]",
-              !value && "text-muted-foreground"
-            )}
-            size="icon"
-          >
-            <CalendarIcon className="h-4 w-4" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-80 p-4" align="start">
-          <div className="space-y-4">
-            <div className="text-center font-medium text-sm">
-              {getDisplayValue()}
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant={"outline"}
+          className={cn(
+            "w-full justify-start text-left font-normal",
+            !value && "text-muted-foreground"
+          )}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {getDisplayValue()}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 p-4" align="start">
+        <div className="space-y-4">
+          <div className="text-center font-medium text-sm">
+            {getDisplayValue()}
+          </div>
+          
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium mb-1 block">Año</label>
+              <Select value={selectedYear} onValueChange={setSelectedYear}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Seleccionar año" />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map((year) => (
+                    <SelectItem key={year} value={String(year)}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
-            <div className="space-y-3">
-              <div>
-                <label className="text-sm font-medium mb-1 block">Año</label>
-                <Select value={selectedYear} onValueChange={setSelectedYear}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Seleccionar año" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {years.map((year) => (
-                      <SelectItem key={year} value={String(year)}>
-                        {year}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium mb-1 block">Mes</label>
-                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Seleccionar mes" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {months.map((month) => (
-                      <SelectItem key={month.value} value={month.value}>
-                        {month.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium mb-1 block">Día</label>
-                <Select value={selectedDay} onValueChange={setSelectedDay}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Seleccionar día" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {days.map((day) => (
-                      <SelectItem key={day} value={String(day).padStart(2, '0')}>
-                        {day}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Mes</label>
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Seleccionar mes" />
+                </SelectTrigger>
+                <SelectContent>
+                  {months.map((month) => (
+                    <SelectItem key={month.value} value={month.value}>
+                      {month.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
-            <div className="flex gap-2 pt-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={clearSelection}
-                className="flex-1"
-              >
-                Limpiar
-              </Button>
-              <Button 
-                size="sm" 
-                onClick={handleApply}
-                disabled={!selectedDay || !selectedMonth || !selectedYear}
-                className="flex-1"
-              >
-                Aplicar
-              </Button>
+            <div>
+              <label className="text-sm font-medium mb-1 block">Día</label>
+              <Select value={selectedDay} onValueChange={setSelectedDay}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Seleccionar día" />
+                </SelectTrigger>
+                <SelectContent>
+                  {days.map((day) => (
+                    <SelectItem key={day} value={String(day).padStart(2, '0')}>
+                      {day}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
-        </PopoverContent>
-      </Popover>
-    </div>
+          
+          <div className="flex gap-2 pt-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={clearSelection}
+              className="flex-1"
+            >
+              Limpiar
+            </Button>
+            <Button 
+              size="sm" 
+              onClick={handleApply}
+              disabled={!selectedDay || !selectedMonth || !selectedYear}
+              className="flex-1"
+            >
+              Aplicar
+            </Button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
   )
 }
