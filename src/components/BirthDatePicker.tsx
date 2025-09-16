@@ -1,19 +1,5 @@
 import * as React from "react"
-import { CalendarIcon } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
 
 interface BirthDatePickerProps {
   value?: string
@@ -21,189 +7,89 @@ interface BirthDatePickerProps {
   placeholder?: string
 }
 
-export function BirthDatePicker({ value, onChange, placeholder = "Seleccionar fecha" }: BirthDatePickerProps) {
-  const [isOpen, setIsOpen] = React.useState(false)
-  const [selectedDay, setSelectedDay] = React.useState<string>("")
-  const [selectedMonth, setSelectedMonth] = React.useState<string>("")
-  const [selectedYear, setSelectedYear] = React.useState<string>("")
+export function BirthDatePicker({ value, onChange, placeholder = "DD/MM/AAAA" }: BirthDatePickerProps) {
+  const [inputValue, setInputValue] = React.useState("")
 
-  // Parse initial value if provided
+  // Sync with external value
   React.useEffect(() => {
     if (value) {
       const date = new Date(value)
       if (!isNaN(date.getTime())) {
-        setSelectedDay(String(date.getDate()).padStart(2, '0'))
-        setSelectedMonth(String(date.getMonth() + 1).padStart(2, '0'))
-        setSelectedYear(String(date.getFullYear()))
+        // Format to DD/MM/YYYY for display
+        const day = String(date.getDate()).padStart(2, '0')
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const year = date.getFullYear()
+        setInputValue(`${day}/${month}/${year}`)
       }
     } else {
-      setSelectedDay("")
-      setSelectedMonth("")
-      setSelectedYear("")
+      setInputValue("")
     }
   }, [value])
 
-  // Update parent when any part changes but prevent loops
-  React.useEffect(() => {
-    if (selectedDay && selectedMonth && selectedYear) {
-      const dateString = `${selectedYear}-${selectedMonth}-${selectedDay}`
-      const date = new Date(dateString)
-      if (!isNaN(date.getTime()) && dateString !== value) {
-        onChange(dateString)
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let input = e.target.value
+    setInputValue(input)
+
+    // Try to parse and convert to ISO format
+    if (input.length >= 8) {
+      // Handle different input formats
+      let day, month, year
+      
+      if (input.includes('/')) {
+        const parts = input.split('/')
+        if (parts.length === 3) {
+          day = parseInt(parts[0])
+          month = parseInt(parts[1])
+          year = parseInt(parts[2])
+        }
+      } else if (input.includes('-')) {
+        // Handle DD-MM-YYYY format
+        const parts = input.split('-')
+        if (parts.length === 3) {
+          day = parseInt(parts[0])
+          month = parseInt(parts[1])
+          year = parseInt(parts[2])
+        }
+      } else if (input.length === 8 && /^\d{8}$/.test(input)) {
+        // Handle DDMMYYYY format
+        day = parseInt(input.substring(0, 2))
+        month = parseInt(input.substring(2, 4))
+        year = parseInt(input.substring(4, 8))
       }
-    } else if (!selectedDay && !selectedMonth && !selectedYear && value) {
+
+      // Validate and convert to ISO format
+      if (day && month && year && day >= 1 && day <= 31 && month >= 1 && month <= 12 && year >= 1900) {
+        const date = new Date(year, month - 1, day)
+        if (date.getDate() === day && date.getMonth() === month - 1 && date.getFullYear() === year) {
+          const isoString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+          onChange(isoString)
+        }
+      }
+    } else if (input === "") {
       onChange("")
     }
-  }, [selectedDay, selectedMonth, selectedYear, onChange])
-
-  const clearSelection = () => {
-    setSelectedDay("")
-    setSelectedMonth("")
-    setSelectedYear("")
-    onChange("")
   }
 
-  const handleApply = () => {
-    if (selectedDay && selectedMonth && selectedYear) {
-      const dateString = `${selectedYear}-${selectedMonth}-${selectedDay}`
-      onChange(dateString)
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Allow numbers, backspace, delete, arrow keys, and separators
+    const allowed = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab']
+    const isNumber = /^\d$/.test(e.key)
+    const isSeparator = ['/', '-'].includes(e.key)
+    
+    if (!isNumber && !isSeparator && !allowed.includes(e.key)) {
+      e.preventDefault()
     }
-    setIsOpen(false)
-  }
-
-  // Generate years (last 120 years)
-  const years = Array.from({ length: 120 }, (_, i) => {
-    const year = new Date().getFullYear() - i
-    return year
-  })
-
-  // Generate months
-  const months = [
-    { value: "01", label: "Enero" },
-    { value: "02", label: "Febrero" },
-    { value: "03", label: "Marzo" },
-    { value: "04", label: "Abril" },
-    { value: "05", label: "Mayo" },
-    { value: "06", label: "Junio" },
-    { value: "07", label: "Julio" },
-    { value: "08", label: "Agosto" },
-    { value: "09", label: "Septiembre" },
-    { value: "10", label: "Octubre" },
-    { value: "11", label: "Noviembre" },
-    { value: "12", label: "Diciembre" }
-  ]
-
-  // Generate days based on selected month and year
-  const getDaysInMonth = () => {
-    if (!selectedMonth || !selectedYear) return 31
-    return new Date(parseInt(selectedYear), parseInt(selectedMonth), 0).getDate()
-  }
-
-  const days = Array.from({ length: getDaysInMonth() }, (_, i) => {
-    const day = i + 1
-    return day
-  })
-
-  const getDisplayValue = () => {
-    if (value) {
-      const date = new Date(value)
-      if (!isNaN(date.getTime())) {
-        return date.toLocaleDateString('es-ES')
-      }
-    }
-    return placeholder
   }
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant={"outline"}
-          className={cn(
-            "w-full justify-start text-left font-normal",
-            !value && "text-muted-foreground"
-          )}
-        >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {getDisplayValue()}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80 p-4" align="start">
-        <div className="space-y-4">
-          <div className="text-center font-medium text-sm">
-            {getDisplayValue()}
-          </div>
-          
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium mb-1 block">Año</label>
-              <Select value={selectedYear} onValueChange={setSelectedYear}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleccionar año" />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.map((year) => (
-                    <SelectItem key={year} value={String(year)}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium mb-1 block">Mes</label>
-              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleccionar mes" />
-                </SelectTrigger>
-                <SelectContent>
-                  {months.map((month) => (
-                    <SelectItem key={month.value} value={month.value}>
-                      {month.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium mb-1 block">Día</label>
-              <Select value={selectedDay} onValueChange={setSelectedDay}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleccionar día" />
-                </SelectTrigger>
-                <SelectContent>
-                  {days.map((day) => (
-                    <SelectItem key={day} value={String(day).padStart(2, '0')}>
-                      {day}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <div className="flex gap-2 pt-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={clearSelection}
-              className="flex-1"
-            >
-              Limpiar
-            </Button>
-            <Button 
-              size="sm" 
-              onClick={handleApply}
-              disabled={!selectedDay || !selectedMonth || !selectedYear}
-              className="flex-1"
-            >
-              Aplicar
-            </Button>
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
+    <Input
+      type="text"
+      value={inputValue}
+      onChange={handleInputChange}
+      onKeyDown={handleKeyDown}
+      placeholder={placeholder}
+      className="w-full"
+      maxLength={10}
+    />
   )
 }
