@@ -1,13 +1,57 @@
-import * as XLSX from 'xlsx'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from '@/hooks/use-toast'
 import type { Tables } from '@/integrations/supabase/types'
+
+// Dynamic XLSX import with fallback
+let XLSX: any = null;
+const loadXLSX = async () => {
+  if (!XLSX) {
+    try {
+      XLSX = await import('xlsx');
+      return true;
+    } catch (error) {
+      console.warn('XLSX library not available. Using CSV export instead.');
+      return false;
+    }
+  }
+  return true;
+};
 
 type Patient = Tables<'patients'>
 type Appointment = Tables<'appointments'>
 type MedicalRecord = Tables<'medical_records'>
 
 export const useExcelExport = () => {
+
+  // CSV export fallback function
+  const exportToCSV = (data: any[], filename: string) => {
+    if (data.length === 0) return;
+    
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+      headers.join(','),
+      ...data.map(row => 
+        headers.map(header => {
+          const value = row[header] || '';
+          // Escape commas and quotes
+          const escapedValue = typeof value === 'string' && (value.includes(',') || value.includes('"')) 
+            ? `"${value.replace(/"/g, '""')}"`
+            : value;
+          return escapedValue;
+        }).join(',')
+      )
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const exportPatientsToExcel = async () => {
     try {
@@ -18,8 +62,8 @@ export const useExcelExport = () => {
 
       if (error) throw error
 
-      // Transform data for Excel
-      const excelData = patients.map(patient => ({
+      // Transform data for export
+      const exportData = patients.map(patient => ({
         'ID': patient.id,
         'Nombre Completo': patient.name,
         'Email': patient.email || '',
@@ -36,22 +80,35 @@ export const useExcelExport = () => {
         'Fecha de Registro': new Date(patient.created_at).toLocaleDateString('es-ES')
       }))
 
-      const worksheet = XLSX.utils.json_to_sheet(excelData)
-      const workbook = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Pacientes')
+      const hasXLSX = await loadXLSX();
+      
+      if (hasXLSX && XLSX) {
+        // Excel export
+        const worksheet = XLSX.utils.json_to_sheet(exportData)
+        const workbook = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Pacientes')
 
-      // Auto-adjust column widths
-      const colWidths = Object.keys(excelData[0] || {}).map(key => ({
-        wch: Math.max(key.length, 15)
-      }))
-      worksheet['!cols'] = colWidths
+        // Auto-adjust column widths
+        const colWidths = Object.keys(exportData[0] || {}).map(key => ({
+          wch: Math.max(key.length, 15)
+        }))
+        worksheet['!cols'] = colWidths
 
-      XLSX.writeFile(workbook, `pacientes-${new Date().toISOString().split('T')[0]}.xlsx`)
-
-      toast({
-        title: "Exportación exitosa",
-        description: `${patients.length} pacientes exportados a Excel`,
-      })
+        XLSX.writeFile(workbook, `pacientes-${new Date().toISOString().split('T')[0]}.xlsx`)
+        
+        toast({
+          title: "Exportación exitosa",
+          description: `${patients.length} pacientes exportados a Excel`,
+        })
+      } else {
+        // CSV fallback
+        exportToCSV(exportData, `pacientes-${new Date().toISOString().split('T')[0]}.csv`);
+        
+        toast({
+          title: "Exportación exitosa (CSV)",
+          description: `${patients.length} pacientes exportados a CSV. Instale la librería XLSX para exportar a Excel.`,
+        })
+      }
 
     } catch (error: any) {
       toast({
@@ -71,7 +128,7 @@ export const useExcelExport = () => {
 
       if (error) throw error
 
-      const excelData = appointments.map(appointment => ({
+      const exportData = appointments.map(appointment => ({
         'ID': appointment.id,
         'Paciente': appointment.patient_name,
         'Teléfono': appointment.patient_phone || '',
@@ -84,21 +141,32 @@ export const useExcelExport = () => {
         'Fecha de Creación': new Date(appointment.created_at).toLocaleDateString('es-ES')
       }))
 
-      const worksheet = XLSX.utils.json_to_sheet(excelData)
-      const workbook = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Turnos')
+      const hasXLSX = await loadXLSX();
+      
+      if (hasXLSX && XLSX) {
+        const worksheet = XLSX.utils.json_to_sheet(exportData)
+        const workbook = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Turnos')
 
-      const colWidths = Object.keys(excelData[0] || {}).map(key => ({
-        wch: Math.max(key.length, 15)
-      }))
-      worksheet['!cols'] = colWidths
+        const colWidths = Object.keys(exportData[0] || {}).map(key => ({
+          wch: Math.max(key.length, 15)
+        }))
+        worksheet['!cols'] = colWidths
 
-      XLSX.writeFile(workbook, `turnos-${new Date().toISOString().split('T')[0]}.xlsx`)
-
-      toast({
-        title: "Exportación exitosa",
-        description: `${appointments.length} turnos exportados a Excel`,
-      })
+        XLSX.writeFile(workbook, `turnos-${new Date().toISOString().split('T')[0]}.xlsx`)
+        
+        toast({
+          title: "Exportación exitosa",
+          description: `${appointments.length} turnos exportados a Excel`,
+        })
+      } else {
+        exportToCSV(exportData, `turnos-${new Date().toISOString().split('T')[0]}.csv`);
+        
+        toast({
+          title: "Exportación exitosa (CSV)",
+          description: `${appointments.length} turnos exportados a CSV. Instale la librería XLSX para exportar a Excel.`,
+        })
+      }
 
     } catch (error: any) {
       toast({
@@ -123,74 +191,105 @@ export const useExcelExport = () => {
 
       if (recordsError) throw recordsError
 
-      // Create workbook with multiple sheets
-      const workbook = XLSX.utils.book_new()
+      const hasXLSX = await loadXLSX();
+      
+      if (hasXLSX && XLSX) {
+        // Create workbook with multiple sheets
+        const workbook = XLSX.utils.book_new()
 
-      // Patients sheet
-      const patientsData = patients.map(patient => ({
-        'ID': patient.id,
-        'Nombre': patient.name,
-        'Email': patient.email || '',
-        'Teléfono': patient.phone || '',
-        'Fecha de Nacimiento': patient.birth_date || '',
-        'Género': patient.gender || '',
-        'Condiciones Médicas': patient.medical_conditions?.join(', ') || '',
-        'Medicamentos': patient.medications?.join(', ') || '',
-        'Alergias': patient.allergies?.join(', ') || ''
-      }))
-
-      const patientsSheet = XLSX.utils.json_to_sheet(patientsData)
-      XLSX.utils.book_append_sheet(workbook, patientsSheet, 'Pacientes')
-
-      // Medical records sheet
-      const recordsData = records.map(record => ({
-        'ID Historia': record.id,
-        'ID Paciente': record.patient_id,
-        'Nombre Paciente': record.patient_name,
-        'Fecha': record.date,
-        'Tipo de Consulta': record.consultation_type,
-        'Síntomas': record.symptoms || '',
-        'Diagnóstico': record.diagnosis || '',
-        'Tratamiento': record.treatment || '',
-        'Medicamentos': record.medications || '',
-        'Notas': record.notes || '',
-        'Fecha de Seguimiento': record.follow_up_date || '',
-        'Doctor ID': record.doctor_id,
-        'Fecha de Creación': new Date(record.created_at).toLocaleDateString('es-ES')
-      }))
-
-      const recordsSheet = XLSX.utils.json_to_sheet(recordsData)
-      XLSX.utils.book_append_sheet(workbook, recordsSheet, 'Historias Clínicas')
-
-      // Combined view
-      const combinedData = patients.map(patient => {
-        const patientRecords = records.filter(r => r.patient_id === patient.id)
-        const recordCount = patientRecords.length
-        const lastRecord = patientRecords.sort((a, b) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        )[0]
-
-        return {
-          'Nombre Paciente': patient.name,
-          'Teléfono': patient.phone || '',
+        // Patients sheet
+        const patientsData = patients.map(patient => ({
+          'ID': patient.id,
+          'Nombre': patient.name,
           'Email': patient.email || '',
-          'Total Historias': recordCount,
-          'Última Consulta': lastRecord ? lastRecord.date : 'Sin consultas',
-          'Último Diagnóstico': lastRecord ? lastRecord.diagnosis || 'N/A' : 'N/A',
+          'Teléfono': patient.phone || '',
+          'Fecha de Nacimiento': patient.birth_date || '',
+          'Género': patient.gender || '',
           'Condiciones Médicas': patient.medical_conditions?.join(', ') || '',
+          'Medicamentos': patient.medications?.join(', ') || '',
           'Alergias': patient.allergies?.join(', ') || ''
-        }
-      })
+        }))
 
-      const combinedSheet = XLSX.utils.json_to_sheet(combinedData)
-      XLSX.utils.book_append_sheet(workbook, combinedSheet, 'Resumen Pacientes')
+        const patientsSheet = XLSX.utils.json_to_sheet(patientsData)
+        XLSX.utils.book_append_sheet(workbook, patientsSheet, 'Pacientes')
 
-      XLSX.writeFile(workbook, `pacientes-historias-${new Date().toISOString().split('T')[0]}.xlsx`)
+        // Medical records sheet
+        const recordsData = records.map(record => ({
+          'ID Historia': record.id,
+          'ID Paciente': record.patient_id,
+          'Nombre Paciente': record.patient_name,
+          'Fecha': record.date,
+          'Tipo de Consulta': record.consultation_type,
+          'Síntomas': record.symptoms || '',
+          'Diagnóstico': record.diagnosis || '',
+          'Tratamiento': record.treatment || '',
+          'Medicamentos': record.medications || '',
+          'Notas': record.notes || '',
+          'Fecha de Seguimiento': record.follow_up_date || '',
+          'Doctor ID': record.doctor_id,
+          'Fecha de Creación': new Date(record.created_at).toLocaleDateString('es-ES')
+        }))
 
-      toast({
-        title: "Exportación completa exitosa",
-        description: `${patients.length} pacientes y ${records.length} historias exportados`,
-      })
+        const recordsSheet = XLSX.utils.json_to_sheet(recordsData)
+        XLSX.utils.book_append_sheet(workbook, recordsSheet, 'Historias Clínicas')
+
+        // Combined view
+        const combinedData = patients.map(patient => {
+          const patientRecords = records.filter(r => r.patient_id === patient.id)
+          const recordCount = patientRecords.length
+          const lastRecord = patientRecords.sort((a, b) => 
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          )[0]
+
+          return {
+            'Nombre Paciente': patient.name,
+            'Teléfono': patient.phone || '',
+            'Email': patient.email || '',
+            'Total Historias': recordCount,
+            'Última Consulta': lastRecord ? lastRecord.date : 'Sin consultas',
+            'Último Diagnóstico': lastRecord ? lastRecord.diagnosis || 'N/A' : 'N/A',
+            'Condiciones Médicas': patient.medical_conditions?.join(', ') || '',
+            'Alergias': patient.allergies?.join(', ') || ''
+          }
+        })
+
+        const combinedSheet = XLSX.utils.json_to_sheet(combinedData)
+        XLSX.utils.book_append_sheet(workbook, combinedSheet, 'Resumen Pacientes')
+
+        XLSX.writeFile(workbook, `pacientes-historias-${new Date().toISOString().split('T')[0]}.xlsx`)
+        
+        toast({
+          title: "Exportación completa exitosa",
+          description: `${patients.length} pacientes y ${records.length} historias exportados`,
+        })
+      } else {
+        // CSV fallback - export combined data
+        const combinedData = patients.map(patient => {
+          const patientRecords = records.filter(r => r.patient_id === patient.id)
+          const recordCount = patientRecords.length
+          const lastRecord = patientRecords.sort((a, b) => 
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          )[0]
+
+          return {
+            'Nombre Paciente': patient.name,
+            'Teléfono': patient.phone || '',
+            'Email': patient.email || '',
+            'Total Historias': recordCount,
+            'Última Consulta': lastRecord ? lastRecord.date : 'Sin consultas',
+            'Último Diagnóstico': lastRecord ? lastRecord.diagnosis || 'N/A' : 'N/A',
+            'Condiciones Médicas': patient.medical_conditions?.join(', ') || '',
+            'Alergias': patient.allergies?.join(', ') || ''
+          }
+        })
+        
+        exportToCSV(combinedData, `pacientes-historias-${new Date().toISOString().split('T')[0]}.csv`);
+        
+        toast({
+          title: "Exportación completa exitosa (CSV)",
+          description: `${patients.length} pacientes exportados a CSV. Instale la librería XLSX para exportar a Excel con múltiples hojas.`,
+        })
+      }
 
     } catch (error: any) {
       toast({
@@ -203,6 +302,12 @@ export const useExcelExport = () => {
 
   const importPatientsFromExcel = async (file: File) => {
     try {
+      const hasXLSX = await loadXLSX();
+      
+      if (!hasXLSX || !XLSX) {
+        throw new Error('La librería XLSX no está disponible. Por favor instale las dependencias necesarias: npm install xlsx @types/xlsx');
+      }
+      
       const data = await file.arrayBuffer()
       const workbook = XLSX.read(data, { type: 'array' })
       const sheetName = workbook.SheetNames[0]
