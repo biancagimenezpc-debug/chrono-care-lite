@@ -8,13 +8,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 
 interface BirthDatePickerProps {
   value?: string
@@ -88,7 +81,7 @@ export function BirthDatePicker({ value, onChange, placeholder = "Seleccionar fe
   // Generate years (last 120 years)
   const years = Array.from({ length: 120 }, (_, i) => {
     const year = new Date().getFullYear() - i
-    return { value: String(year), label: String(year) }
+    return year
   })
 
   // Generate months
@@ -115,7 +108,7 @@ export function BirthDatePicker({ value, onChange, placeholder = "Seleccionar fe
 
   const days = Array.from({ length: getDaysInMonth() }, (_, i) => {
     const day = i + 1
-    return { value: String(day).padStart(2, '0'), label: String(day) }
+    return day
   })
 
   const getDisplayValue = () => {
@@ -128,6 +121,7 @@ export function BirthDatePicker({ value, onChange, placeholder = "Seleccionar fe
     return placeholder
   }
 
+  return (
   return (
     <div className="flex gap-2">
       <Input
@@ -159,50 +153,50 @@ export function BirthDatePicker({ value, onChange, placeholder = "Seleccionar fe
             <div className="space-y-3">
               <div>
                 <label className="text-sm font-medium mb-1 block">Año</label>
-                <Select value={selectedYear} onValueChange={setSelectedYear}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar año" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[200px]">
-                    {years.map((year) => (
-                      <SelectItem key={year.value} value={year.value}>
-                        {year.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                >
+                  <option value="">Seleccionar año</option>
+                  {years.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
               </div>
               
               <div>
                 <label className="text-sm font-medium mb-1 block">Mes</label>
-                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar mes" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {months.map((month) => (
-                      <SelectItem key={month.value} value={month.value}>
-                        {month.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                >
+                  <option value="">Seleccionar mes</option>
+                  {months.map((month) => (
+                    <option key={month.value} value={month.value}>
+                      {month.label}
+                    </option>
+                  ))}
+                </select>
               </div>
               
               <div>
                 <label className="text-sm font-medium mb-1 block">Día</label>
-                <Select value={selectedDay} onValueChange={setSelectedDay}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar día" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[200px]">
-                    {days.map((day) => (
-                      <SelectItem key={day.value} value={day.value}>
-                        {day.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <select
+                  value={selectedDay}
+                  onChange={(e) => setSelectedDay(e.target.value)}
+                  className="w-full px-3 py-2 border border-input bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                >
+                  <option value="">Seleccionar día</option>
+                  {days.map((day) => (
+                    <option key={day} value={String(day).padStart(2, '0')}>
+                      {day}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
             
