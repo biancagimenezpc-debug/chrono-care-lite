@@ -720,22 +720,29 @@ const AppointmentManager = () => {
                       )}
                     </div>
                     
-                    <div className="flex items-center space-x-2">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:space-x-2">
                       <Button 
                         variant="outline" 
                         size="sm"
                         onClick={() => handleReschedule(appointment)}
+                        className="w-full sm:w-auto"
                       >
-                        <RotateCcw className="w-4 h-4 mr-1" />
-                        Reprogramar
+                        <RotateCcw className="w-4 h-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Reprogramar</span>
+                        <span className="sm:hidden">Reprogramar</span>
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            className="w-full sm:w-auto"
+                          >
+                            <Trash2 className="w-4 h-4 sm:mr-1" />
+                            <span className="hidden sm:inline">Eliminar</span>
+                            <span className="sm:hidden">Eliminar</span>
                           </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="sm">
-                                <Trash2 className="w-4 h-4 mr-1" />
-                                Eliminar
-                              </Button>
-                            </AlertDialogTrigger>
+                        </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>¿Eliminar cita?</AlertDialogTitle>
@@ -749,16 +756,22 @@ const AppointmentManager = () => {
                                   Eliminar
                                 </AlertDialogAction>
                               </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                        </AlertDialogContent>
+                      </AlertDialog>
                       <Button 
                         variant="default" 
                         size="sm"
                         onClick={() => handleAttend(appointment)}
                         disabled={appointment.status === 'completada'}
+                        className="w-full sm:w-auto"
                       >
-                        <UserCheck className="w-4 h-4 mr-1" />
-                        {appointment.status === 'completada' ? 'Atendido' : 'Atender'}
+                        <UserCheck className="w-4 h-4 sm:mr-1" />
+                        <span className="hidden sm:inline">
+                          {appointment.status === 'completada' ? 'Atendido' : 'Atender'}
+                        </span>
+                        <span className="sm:hidden">
+                          {appointment.status === 'completada' ? 'Atendido' : 'Atender'}
+                        </span>
                       </Button>
                     </div>
                   </div>
