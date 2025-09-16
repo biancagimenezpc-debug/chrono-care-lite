@@ -114,22 +114,30 @@ export const useAppointments = () => {
 
   const deleteAppointment = async (id: string) => {
     try {
-      const { error } = await supabase
+      console.log('Attempting to delete appointment with ID:', id)
+      
+      const { data, error } = await supabase
         .from('appointments')
         .delete()
         .eq('id', id)
+        .select() // Return deleted data to confirm deletion
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase delete error:', error)
+        throw error
+      }
 
+      console.log('Appointment deleted successfully:', data)
       setAppointments(prev => prev.filter(a => a.id !== id))
       toast({
         title: "Cita eliminada",
         description: "La cita ha sido eliminada correctamente",
       })
     } catch (error: any) {
+      console.error('Delete appointment error:', error)
       toast({
         title: "Error al eliminar cita",
-        description: error.message,
+        description: error.message || "Error desconocido al eliminar la cita",
         variant: "destructive",
       })
       throw error

@@ -86,22 +86,30 @@ export const usePatients = () => {
 
   const deletePatient = async (id: string) => {
     try {
-      const { error } = await supabase
+      console.log('Attempting to delete patient with ID:', id)
+      
+      const { data, error } = await supabase
         .from('patients')
         .delete()
         .eq('id', id)
+        .select() // Return deleted data to confirm deletion
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase delete error:', error)
+        throw error
+      }
 
+      console.log('Patient deleted successfully:', data)
       setPatients(prev => prev.filter(p => p.id !== id))
       toast({
         title: "Paciente eliminado",
         description: "El paciente ha sido eliminado correctamente",
       })
     } catch (error: any) {
+      console.error('Delete patient error:', error)
       toast({
         title: "Error al eliminar paciente",
-        description: error.message,
+        description: error.message || "Error desconocido al eliminar el paciente",
         variant: "destructive",
       })
       throw error
