@@ -33,7 +33,7 @@ export function BirthDatePicker({ value, onChange, placeholder = "Seleccionar fe
     return 0 // January
   })
 
-  const handleDateChange = (selectedDate: Date | undefined) => {
+  const handleDateChange = (selectedDate: Date | undefined, closePopover: boolean = true) => {
     setDate(selectedDate)
     if (selectedDate) {
       setSelectedYear(selectedDate.getFullYear())
@@ -41,7 +41,9 @@ export function BirthDatePicker({ value, onChange, placeholder = "Seleccionar fe
       // Format date as YYYY-MM-DD for the backend
       const formattedDate = format(selectedDate, "yyyy-MM-dd")
       onChange(formattedDate)
-      setIsOpen(false) // Close popover after selection
+      if (closePopover) {
+        setIsOpen(false) // Close popover after selection
+      }
     } else {
       onChange("")
     }
@@ -51,14 +53,14 @@ export function BirthDatePicker({ value, onChange, placeholder = "Seleccionar fe
     setSelectedYear(newYear)
     const newDate = new Date(date || new Date(newYear, selectedMonth, 1))
     newDate.setFullYear(newYear)
-    handleDateChange(newDate)
+    handleDateChange(newDate, false) // Don't close popover when changing year
   }
 
   const handleMonthChange = (newMonth: number) => {
     setSelectedMonth(newMonth)
     const newDate = new Date(date || new Date(selectedYear, newMonth, 1))
     newDate.setMonth(newMonth)
-    handleDateChange(newDate)
+    handleDateChange(newDate, false) // Don't close popover when changing month
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,12 +103,14 @@ export function BirthDatePicker({ value, onChange, placeholder = "Seleccionar fe
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
-          <div className="p-3">
+          <div className="p-3" onMouseDown={(e) => e.preventDefault()}>
             <div className="flex items-center justify-between gap-2 mb-3">
               <select
                 value={selectedYear}
                 onChange={(e) => handleYearChange(parseInt(e.target.value))}
                 className="px-2 py-1 border rounded text-sm flex-1"
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
               >
                 {Array.from({ length: 120 }, (_, i) => {
                   const year = new Date().getFullYear() - i
@@ -121,6 +125,8 @@ export function BirthDatePicker({ value, onChange, placeholder = "Seleccionar fe
                 value={selectedMonth}
                 onChange={(e) => handleMonthChange(parseInt(e.target.value))}
                 className="px-2 py-1 border rounded text-sm flex-1"
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
               >
                 {Array.from({ length: 12 }, (_, i) => {
                   const monthName = new Date(2000, i, 1).toLocaleDateString('es-ES', { month: 'long' })
