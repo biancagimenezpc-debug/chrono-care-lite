@@ -1,14 +1,14 @@
 import { useState } from "react";
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Plus, Phone, Mail, Calendar, Eye, Loader2, Edit, FileText, User } from "lucide-react";
+import { Search, Plus, Phone, Mail, Calendar, Eye, Loader2, Edit, FileText, User, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,6 +16,7 @@ import { usePatients } from "@/hooks/usePatients";
 import { useMedicalRecords } from "@/hooks/useMedicalRecords";
 import { Patient } from "@/lib/supabase";
 import type { Tables } from "@/integrations/supabase/types";
+import { BirthDatePicker } from "@/components/BirthDatePicker";
 
 type MedicalRecord = Tables<'medical_records'>;
 
@@ -44,7 +45,7 @@ const PatientList = () => {
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
-  const { patients, loading, createPatient, updatePatient } = usePatients();
+  const { patients, loading, createPatient, updatePatient, deletePatient } = usePatients();
   const { records: allRecords, loading: recordsLoading } = useMedicalRecords();
 
   const form = useForm<NewPatientForm>({
@@ -261,7 +262,11 @@ const PatientList = () => {
                       <FormItem>
                         <FormLabel>Fecha de Nacimiento *</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <BirthDatePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Seleccionar fecha de nacimiento"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -823,7 +828,29 @@ const PatientList = () => {
                     >
                       <Eye className="w-4 h-4" />
                       <span>Ver Historia</span>
-                    </Button>
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm">
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              Eliminar
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Eliminar paciente?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta acción no se puede deshacer. Se eliminará permanentemente la información del paciente {patient.name}.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deletePatient(patient.id)}>
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                     <Button 
                       variant="default" 
                       size="sm"

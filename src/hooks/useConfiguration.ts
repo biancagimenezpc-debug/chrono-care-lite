@@ -44,7 +44,27 @@ export const useConfiguration = () => {
 
       if (data) {
         console.log('Configuration loaded:', data)
-        setConfiguration(data)
+        const config: Configuration = {
+          id: data.id,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
+          user_id: data.user_id,
+          clinic_name: data.clinic_name,
+          clinic_address: data.clinic_address,
+          clinic_phone: data.clinic_phone,
+          clinic_email: data.clinic_email,
+          clinic_description: data.clinic_description,
+          doctor_name: data.doctor_name,
+          specialty: (data as any).specialty || '',
+          license_number: (data as any).license_number || '',
+          appointment_duration: data.appointment_duration || 30,
+          working_hours_start: data.working_hours_start || '08:00',
+          working_hours_end: data.working_hours_end || '18:00',
+          notifications: (data as any).notifications ?? true,
+          email_reminders: (data as any).email_reminders ?? true,
+          sms_reminders: (data as any).sms_reminders ?? false
+        }
+        setConfiguration(config)
       } else {
         // Create default configuration if none exists
         const defaultConfig: Omit<Configuration, 'id' | 'created_at' | 'updated_at'> = {
@@ -74,7 +94,28 @@ export const useConfiguration = () => {
           .single()
 
         if (createError) throw createError
-        setConfiguration(newConfig)
+        
+        const config: Configuration = {
+          id: newConfig.id,
+          created_at: newConfig.created_at,
+          updated_at: newConfig.updated_at,
+          user_id: newConfig.user_id,
+          clinic_name: newConfig.clinic_name,
+          clinic_address: newConfig.clinic_address,
+          clinic_phone: newConfig.clinic_phone,
+          clinic_email: newConfig.clinic_email,
+          clinic_description: newConfig.clinic_description,
+          doctor_name: newConfig.doctor_name,
+          specialty: (newConfig as any).specialty || '',
+          license_number: (newConfig as any).license_number || '',
+          appointment_duration: newConfig.appointment_duration || 30,
+          working_hours_start: newConfig.working_hours_start || '08:00',
+          working_hours_end: newConfig.working_hours_end || '18:00',
+          notifications: (newConfig as any).notifications ?? true,
+          email_reminders: (newConfig as any).email_reminders ?? true,
+          sms_reminders: (newConfig as any).sms_reminders ?? false
+        }
+        setConfiguration(config)
       }
     } catch (error: any) {
       console.error('Error fetching configuration:', error)
@@ -107,7 +148,27 @@ export const useConfiguration = () => {
 
       if (error) throw error
 
-      setConfiguration(data)
+      const config: Configuration = {
+        id: data.id,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        user_id: data.user_id,
+        clinic_name: data.clinic_name,
+        clinic_address: data.clinic_address,
+        clinic_phone: data.clinic_phone,
+        clinic_email: data.clinic_email,
+        clinic_description: data.clinic_description,
+        doctor_name: data.doctor_name,
+        specialty: (data as any).specialty || '',
+        license_number: (data as any).license_number || '',
+        appointment_duration: data.appointment_duration || 30,
+        working_hours_start: data.working_hours_start || '08:00',
+        working_hours_end: data.working_hours_end || '18:00',
+        notifications: (data as any).notifications ?? true,
+        email_reminders: (data as any).email_reminders ?? true,
+        sms_reminders: (data as any).sms_reminders ?? false
+      }
+      setConfiguration(config)
       toast({
         title: "Configuración actualizada",
         description: "Los cambios se han guardado correctamente",
@@ -159,12 +220,20 @@ export const useConfiguration = () => {
 
   const isWorkingDay = (date: string): boolean => {
     // Since working_days is not in the current schema, default to Monday-Friday
-    // Using the local timezone for consistent day calculation
-    const localDate = new Date(date + 'T00:00:00')
-    const dayOfWeek = localDate.getDay()
+    // Using Buenos Aires timezone (GMT-3) for consistent day calculation
+    const dateObj = new Date(date + 'T12:00:00-03:00') // Force Buenos Aires timezone
+    const dayOfWeek = dateObj.getDay()
     // 0=Sunday, 1=Monday, ..., 6=Saturday
     // Return true for Monday (1) through Friday (5)
     return dayOfWeek >= 1 && dayOfWeek <= 5
+  }
+
+  // Helper function to get current date in Buenos Aires timezone
+  const getCurrentDateBuenosAires = (): string => {
+    const now = new Date()
+    // Convert to Buenos Aires time (GMT-3)
+    const buenosAiresTime = new Date(now.getTime() - (3 * 60 * 60 * 1000))
+    return buenosAiresTime.toISOString().split('T')[0]
   }
 
   useEffect(() => {
@@ -177,6 +246,7 @@ export const useConfiguration = () => {
     updateConfiguration,
     getAvailableTimeSlots,
     isWorkingDay,
+    getCurrentDateBuenosAires,
     refetch: fetchConfiguration
   }
 }

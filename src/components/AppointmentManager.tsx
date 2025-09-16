@@ -29,12 +29,17 @@ const newAppointmentSchema = z.object({
 type NewAppointmentForm = z.infer<typeof newAppointmentSchema>;
 
 const AppointmentManager = () => {
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const now = new Date()
+    // Convert to Buenos Aires time (GMT-3)
+    const buenosAiresTime = new Date(now.getTime() - (3 * 60 * 60 * 1000))
+    return buenosAiresTime.toISOString().split('T')[0]
+  });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isRescheduleDialogOpen, setIsRescheduleDialogOpen] = useState(false);
   const [selectedPatientPhone, setSelectedPatientPhone] = useState("");
   const [appointmentToReschedule, setAppointmentToReschedule] = useState<any>(null);
-  const { appointments, loading, createAppointment, updateAppointment } = useAppointments();
+  const { appointments, loading, createAppointment, updateAppointment, deleteAppointment } = useAppointments();
   const { configuration, getAvailableTimeSlots, isWorkingDay } = useConfiguration();
 
   const form = useForm<NewAppointmentForm>({
@@ -700,7 +705,51 @@ const AppointmentManager = () => {
                       >
                         <RotateCcw className="w-4 h-4 mr-1" />
                         Reprogramar
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="sm">
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                Eliminar
                       </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" size="sm">
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            Eliminar
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>¿Eliminar cita?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta acción no se puede deshacer. Se eliminará permanentemente la cita de {appointment.patient_name} del {appointment.date} a las {appointment.time}.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteAppointment(appointment.id)}>
+                              Eliminar
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>¿Eliminar cita?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta acción no se puede deshacer. Se eliminará permanentemente la cita de {apt.patient_name} del {apt.date} a las {apt.time}.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => deleteAppointment(apt.id)}>
+                                  Eliminar
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                       <Button 
                         variant="default" 
                         size="sm"

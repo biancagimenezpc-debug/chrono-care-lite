@@ -129,257 +129,81 @@ const Configuration = () => {
       {/* Gestión de Usuarios - Solo para Administradores */}
       {isAdmin && (
         <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                Gestión de Usuarios
-              </div>
-              <Dialog open={showCreateUser} onOpenChange={setShowCreateUser}>
-                <DialogTrigger asChild>
-                  <Button size="sm">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Nuevo Usuario
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Crear Nuevo Usuario</DialogTitle>
-                    <DialogDescription>
-                      Crea un nuevo usuario médico para el sistema
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4 pt-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="new-email">Email</Label>
-                        <Input
-                          id="new-email"
-                          type="email"
-                          value={newUser.email}
-                          onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
-                          placeholder="doctor@mediclinic.com"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="new-password">Contraseña</Label>
-                        <Input
-                          id="new-password"
-                          type="password"
-                          value={newUser.password}
-                          onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
-                          placeholder="********"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="new-name">Nombre Completo</Label>
-                      <Input
-                        id="new-name"
-                        value={newUser.full_name}
-                        onChange={(e) => setNewUser(prev => ({ ...prev, full_name: e.target.value }))}
-                        placeholder="Dr. Juan Pérez"
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="new-role">Rol</Label>
-                        <Select
-                          value={newUser.role}
-                          onValueChange={(value: 'admin' | 'doctor') => setNewUser(prev => ({ ...prev, role: value }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="doctor">Médico</SelectItem>
-                            <SelectItem value="admin">Administrador</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="new-license">Número de Colegiado</Label>
-                        <Input
-                          id="new-license"
-                          value={newUser.license_number}
-                          onChange={(e) => setNewUser(prev => ({ ...prev, license_number: e.target.value }))}
-                          placeholder="12345"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="new-specialty">Especialidad</Label>
-                      <Select
-                        value={newUser.specialty}
-                        onValueChange={(value) => setNewUser(prev => ({ ...prev, specialty: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona especialidad" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="medicina-general">Medicina General</SelectItem>
-                          <SelectItem value="cardiologia">Cardiología</SelectItem>
-                          <SelectItem value="dermatologia">Dermatología</SelectItem>
-                          <SelectItem value="pediatria">Pediatría</SelectItem>
-                          <SelectItem value="ginecologia">Ginecología</SelectItem>
-                          <SelectItem value="traumatologia">Traumatología</SelectItem>
-                          <SelectItem value="neurologia">Neurología</SelectItem>
-                          <SelectItem value="psiquiatria">Psiquiatría</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="flex justify-end gap-2 pt-4">
-                      <Button variant="outline" onClick={() => setShowCreateUser(false)}>
-                        Cancelar
-                      </Button>
-                      <Button onClick={handleCreateUser}>
-                        Crear Usuario
-                      </Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </CardTitle>
-            <CardDescription>
-              Administra los usuarios del sistema médico
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Rol</TableHead>
-                  <TableHead>Especialidad</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {usersLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center">
-                      Cargando usuarios...
-                    </TableCell>
-                  </TableRow>
-                ) : users.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center">
-                      No hay usuarios registrados
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.full_name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                          {user.role === 'admin' ? 'Administrador' : 'Médico'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{user.specialty || '-'}</TableCell>
-                      <TableCell>
-                        <Badge variant={user.is_active ? 'default' : 'destructive'}>
-                          {user.is_active ? 'Activo' : 'Inactivo'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleUserStatus(user.id, !user.is_active)}
-                        >
-                          {user.is_active ? (
-                            <ToggleRight className="w-4 h-4" />
-                          ) : (
-                            <ToggleLeft className="w-4 h-4" />
-                          )}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
+...
         </Card>
       )}
 
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Configuración de la Clínica */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="w-5 h-5" />
-              Información de la Clínica
-            </CardTitle>
-            <CardDescription>
-              Configura los datos básicos de tu clínica
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="clinic-name">Nombre de la Clínica</Label>
-              <Input
-                id="clinic-name"
-                value={formData.clinic_name}
-                onChange={(e) => setFormData(prev => ({ ...prev, clinic_name: e.target.value }))}
-                placeholder="Nombre de tu clínica"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="clinic-address">Dirección</Label>
-              <Textarea
-                id="clinic-address"
-                value={formData.clinic_address}
-                onChange={(e) => setFormData(prev => ({ ...prev, clinic_address: e.target.value }))}
-                placeholder="Dirección completa de la clínica"
-                rows={3}
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
+        {/* Configuración de la Clínica - Solo para Administradores */}
+        {isAdmin && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="w-5 h-5" />
+                Información de la Clínica
+              </CardTitle>
+              <CardDescription>
+                Configura los datos básicos de tu clínica
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="clinic-phone">Teléfono</Label>
+                <Label htmlFor="clinic-name">Nombre de la Clínica</Label>
                 <Input
-                  id="clinic-phone"
-                  value={formData.clinic_phone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, clinic_phone: e.target.value }))}
-                  placeholder="+1 234 567 8900"
+                  id="clinic-name"
+                  value={formData.clinic_name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, clinic_name: e.target.value }))}
+                  placeholder="Nombre de tu clínica"
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="clinic-email">Email</Label>
-                <Input
-                  id="clinic-email"
-                  type="email"
-                  value={formData.clinic_email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, clinic_email: e.target.value }))}
-                  placeholder="contacto@clinica.com"
+                <Label htmlFor="clinic-address">Dirección</Label>
+                <Textarea
+                  id="clinic-address"
+                  value={formData.clinic_address}
+                  onChange={(e) => setFormData(prev => ({ ...prev, clinic_address: e.target.value }))}
+                  placeholder="Dirección completa de la clínica"
+                  rows={3}
                 />
               </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="clinic-description">Descripción</Label>
-              <Textarea
-                id="clinic-description"
-                value={formData.clinic_description}
-                onChange={(e) => setFormData(prev => ({ ...prev, clinic_description: e.target.value }))}
-                placeholder="Breve descripción de los servicios"
-                rows={3}
-              />
-            </div>
-          </CardContent>
-        </Card>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="clinic-phone">Teléfono</Label>
+                  <Input
+                    id="clinic-phone"
+                    value={formData.clinic_phone}
+                    onChange={(e) => setFormData(prev => ({ ...prev, clinic_phone: e.target.value }))}
+                    placeholder="+1 234 567 8900"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="clinic-email">Email</Label>
+                  <Input
+                    id="clinic-email"
+                    type="email"
+                    value={formData.clinic_email}
+                    onChange={(e) => setFormData(prev => ({ ...prev, clinic_email: e.target.value }))}
+                    placeholder="contacto@clinica.com"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="clinic-description">Descripción</Label>
+                <Textarea
+                  id="clinic-description"
+                  value={formData.clinic_description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, clinic_description: e.target.value }))}
+                  placeholder="Breve descripción de los servicios"
+                  rows={3}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Configuración del Usuario */}
         <Card>
