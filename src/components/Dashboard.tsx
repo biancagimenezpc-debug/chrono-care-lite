@@ -18,13 +18,47 @@ const Dashboard = ({ onNavigate }: DashboardProps = {}) => {
   const { records: medicalRecords, loading: recordsLoading } = useMedicalRecords();
   const [navigationAction, setNavigationAction] = useState<string | null>(null);
 
-  // Calculate today's appointments using local timezone
-  const today = (() => {
-    const now = new Date();
-    return now.getFullYear() + '-' + 
-      String(now.getMonth() + 1).padStart(2, '0') + '-' + 
-      String(now.getDate()).padStart(2, '0');
-  })();
+  // Calculate today's date and current time for filtering
+  const now = new Date();
+  const today = now.getFullYear() + '-' + 
+    String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+    String(now.getDate()).padStart(2, '0');
+  const currentTime = now.getHours().toString().padStart(2, '0') + ':' + 
+    now.getMinutes().toString().padStart(2, '0');
+
+  // Filter upcoming appointments (not expired, not attended)
+  const upcomingAppointments = appointments
+    .filter(apt => {
+      // Exclude completed or cancelled appointments
+      if (apt.status === 'completada' || apt.status === 'cancelada') {
+        return false;
+      }
+      
+      // Convert appointment date and time for comparison
+      const appointmentDate = new Date(apt.date);
+      const todayDate = new Date(today);
+      
+      // If appointment is in the future, include it
+      if (appointmentDate > todayDate) {
+        return true;
+      }
+      
+      // If appointment is today, check if time hasn't passed yet
+      if (apt.date === today) {
+        return apt.time > currentTime;
+      }
+      
+      // If appointment is in the past, exclude it
+      return false;
+    })
+    .sort((a, b) => {
+      // Sort by date first, then by time
+      const dateComparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+      if (dateComparison !== 0) return dateComparison;
+      return a.time.localeCompare(b.time);
+    })
+    .slice(0, 5); // Take only the first 5
+
   const todayAppointments = appointments.filter(apt => apt.date === today);
   const pendingAppointments = todayAppointments.filter(apt => apt.status === 'programada' || apt.status === 'confirmada');
   const activeConsultations = appointments.filter(apt => apt.status === 'confirmada').length;
@@ -162,20 +196,34 @@ const Dashboard = ({ onNavigate }: DashboardProps = {}) => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {todayAppointments.length === 0 ? (
+              {upcomingAppointments.length === 0 ? (
                 <p className="text-center text-muted-foreground py-4">
-                  No hay citas programadas para hoy
+                  No hay citas próximas programadas
                 </p>
               ) : (
-                todayAppointments.slice(0, 4).map((cita, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                    <div>
-                      <p className="font-medium text-foreground">{cita.patient_name}</p>
-                      <p className="text-sm text-muted-foreground">{cita.consultation_type}</p>
+                upcomingAppointments.map((cita, index) => {
+                  const appointmentDate = new Date(cita.date);
+                  const isToday = cita.date === today;
+                  const dateLabel = isToday ? 'Hoy' : appointmentDate.toLocaleDateString('es-ES', { 
+                    weekday: 'short', 
+                    day: 'numeric', 
+                    month: 'short' 
+                  });
+                  
+                  return (
+                    <div key={cita.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                      <div>
+                        <p className="font-medium text-foreground">{cita.patient_name}</p>
+                        <p className="text-sm text-muted-foreground">{cita.consultation_type}</p>
+                        <p className="text-xs text-muted-foreground">{dateLabel}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-medium text-primary">{cita.time}</span>
+                        <p className="text-xs text-muted-foreground capitalize">{cita.status}</p>
+                      </div>
                     </div>
-                    <span className="text-sm font-medium text-primary">{cita.time}</span>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </CardContent>
