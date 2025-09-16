@@ -18,8 +18,13 @@ const Dashboard = ({ onNavigate }: DashboardProps = {}) => {
   const { records: medicalRecords, loading: recordsLoading } = useMedicalRecords();
   const [navigationAction, setNavigationAction] = useState<string | null>(null);
 
-  // Calculate today's appointments
-  const today = new Date().toISOString().split('T')[0];
+  // Calculate today's appointments using local timezone
+  const today = (() => {
+    const now = new Date();
+    return now.getFullYear() + '-' + 
+      String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+      String(now.getDate()).padStart(2, '0');
+  })();
   const todayAppointments = appointments.filter(apt => apt.date === today);
   const pendingAppointments = todayAppointments.filter(apt => apt.status === 'programada' || apt.status === 'confirmada');
   const activeConsultations = appointments.filter(apt => apt.status === 'confirmada').length;

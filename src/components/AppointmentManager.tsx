@@ -32,9 +32,8 @@ type NewAppointmentForm = z.infer<typeof newAppointmentSchema>;
 const AppointmentManager = () => {
   const [selectedDate, setSelectedDate] = useState(() => {
     const now = new Date()
-    // Convert to Buenos Aires time (GMT-3)
-    const buenosAiresTime = new Date(now.getTime() - (3 * 60 * 60 * 1000))
-    return buenosAiresTime.toISOString().split('T')[0]
+    // Use local timezone
+    return now.toISOString().split('T')[0]
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isRescheduleDialogOpen, setIsRescheduleDialogOpen] = useState(false);
@@ -197,10 +196,10 @@ const AppointmentManager = () => {
   // Check if selected date is a working day
   const isSelectedDateWorkingDay = isWorkingDay(selectedDate);
   
-  // Helper functions for date/time validation
+  // Helper functions for date/time validation using local timezone
   const isPastDate = (date: string): boolean => {
     const today = new Date();
-    const selectedDateObj = new Date(date);
+    const selectedDateObj = new Date(date + 'T00:00:00');
     // Set both dates to start of day for comparison
     today.setHours(0, 0, 0, 0);
     selectedDateObj.setHours(0, 0, 0, 0);
@@ -209,13 +208,19 @@ const AppointmentManager = () => {
   
   const isPastTime = (date: string, time: string): boolean => {
     const now = new Date();
-    const appointmentDateTime = new Date(`${date}T${time}:00`);
+    // Create appointment time in local timezone
+    const [hours, minutes] = time.split(':').map(Number);
+    const appointmentDateTime = new Date(date + 'T00:00:00');
+    appointmentDateTime.setHours(hours, minutes, 0, 0);
     return appointmentDateTime <= now;
   };
   
   const isCurrentDate = (date: string): boolean => {
-    const today = new Date().toISOString().split('T')[0];
-    return date === today;
+    const today = new Date();
+    const todayString = today.getFullYear() + '-' + 
+      String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+      String(today.getDate()).padStart(2, '0');
+    return date === todayString;
   };
   
   // Get booked times for any specific date
@@ -603,7 +608,13 @@ const AppointmentManager = () => {
               variant="outline" 
               size="sm" 
               className="w-full mt-3"
-              onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+              onClick={() => {
+                const today = new Date();
+                const todayString = today.getFullYear() + '-' + 
+                  String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                  String(today.getDate()).padStart(2, '0');
+                setSelectedDate(todayString);
+              }}
             >
               <Calendar className="w-4 h-4 mr-2" />
               Ir a Hoy
