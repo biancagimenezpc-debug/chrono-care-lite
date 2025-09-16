@@ -41,10 +41,6 @@ const Dashboard = ({ onNavigate }: DashboardProps = {}) => {
 
   const handleCardClick = (type: string) => {
     setNavigationAction(type);
-    toast({
-      title: "Navegación",
-      description: `Navegando a ${type}...`,
-    });
     
     // Use the onNavigate prop to change tabs
     setTimeout(() => {
@@ -65,7 +61,7 @@ const Dashboard = ({ onNavigate }: DashboardProps = {}) => {
             break;
         }
       }
-    }, 500);
+    }, 200);
   };
 
   const loading = patientsLoading || appointmentsLoading || recordsLoading;

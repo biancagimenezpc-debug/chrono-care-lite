@@ -495,7 +495,11 @@ const PatientList = () => {
                       <FormItem>
                         <FormLabel>Fecha de Nacimiento *</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <BirthDatePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Seleccionar fecha de nacimiento"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
