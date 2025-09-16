@@ -129,7 +129,6 @@ export function BirthDatePicker({ value, onChange, placeholder = "Seleccionar fe
   }
 
   return (
-  return (
     <div className="flex gap-2">
       <Input
         type="date"
