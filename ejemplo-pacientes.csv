@@ -1,0 +1,11 @@
+Nombre Completo,Email,Teléfono,Fecha de Nacimiento,Género,Dirección,Contacto de Emergencia,Teléfono de Emergencia,Seguro Médico,Condiciones Médicas,Medicamentos,Alergias
+María García López,maria.garcia@email.com,+54 11 1234-5678,15/03/1985,Femenino,"Av. Corrientes 1234, CABA",Juan García,+54 11 9876-5432,OSDE,"Hipertensión, Diabetes tipo 2","Metformina, Enalapril",Penicilina
+Carlos Rodríguez,carlos.rodriguez@email.com,+54 11 2345-6789,28/07/1978,Masculino,"San Martín 567, CABA",Ana Rodríguez,+54 11 8765-4321,Swiss Medical,Asma,Salbutamol,Ácaros
+Ana Fernández,ana.fernandez@email.com,+54 11 3456-7890,12/11/1992,Femenino,"Rivadavia 890, CABA",Pedro Fernández,+54 11 7654-3210,Galeno,,,,
+Luis Martínez,luis.martinez@email.com,+54 11 4567-8901,05/09/1960,Masculino,"Belgrano 345, CABA",Carmen Martínez,+54 11 6543-2109,PAMI,Artritis,"Ibuprofeno, Glucosamina",Aspirina
+Sofia Morales,sofia.morales@email.com,+54 11 5678-9012,22/01/1988,Femenino,"Florida 678, CABA",Roberto Morales,+54 11 5432-1098,Medicus,Migraña,Sumatriptán,
+Diego Castro,diego.castro@email.com,+54 11 6789-0123,14/05/1975,Masculino,"Santa Fe 912, CABA",Elena Castro,+54 11 4321-0987,OSDE,Colesterol alto,Atorvastatina,Mariscos
+Patricia Ruiz,patricia.ruiz@email.com,+54 11 7890-1234,30/12/1983,Femenino,"9 de Julio 456, CABA",Miguel Ruiz,+54 11 3210-9876,Swiss Medical,,,,
+Fernando López,fernando.lopez@email.com,+54 11 8901-2345,18/08/1970,Masculino,"Callao 789, CABA",Silvia López,+54 11 2109-8765,Galeno,Gastritis,Omeprazol,
+Claudia Díaz,claudia.diaz@email.com,+54 11 9012-3456,03/04/1995,Femenino,"Alem 123, CABA",Jorge Díaz,+54 11 1098-7654,Medicus,"Ansiedad, Depresión","Sertralina, Alprazolam",Lactosa
+Roberto Silva,roberto.silva@email.com,+54 11 0123-4567,25/06/1982,Masculino,"Maipú 234, CABA",Laura Silva,+54 11 0987-6543,OSDE,,,Gluten

@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Home, Users, Calendar, FileText, Settings, LogOut, Menu } from "lucide-react";
+import { Home, Users, Calendar, FileText, Settings, LogOut, Menu, BarChart3 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserManagement } from "@/hooks/useUserManagement";
 
 interface NavigationProps {
   activeTab: string;
@@ -11,6 +12,7 @@ interface NavigationProps {
 
 const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
   const { user, signOut } = useAuth();
+  const { isAdmin } = useUserManagement();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   
   const navItems = [
@@ -18,8 +20,17 @@ const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
     { id: "pacientes", label: "Pacientes", icon: Users },
     { id: "turnos", label: "Turnos", icon: Calendar },
     { id: "historias", label: "Historias", icon: FileText },
+    { id: "informes", label: "Informes", icon: BarChart3, adminOnly: true },
     { id: "configuracion", label: "Configuración", icon: Settings },
   ];
+
+  // Filter navigation items based on admin status
+  const filteredNavItems = navItems.filter(item => {
+    if (item.adminOnly && !isAdmin) {
+      return false;
+    }
+    return true;
+  });
 
   const handleSignOut = async () => {
     await signOut();
@@ -71,7 +82,7 @@ const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
               
               {/* Navigation Items */}
               <div className="space-y-2">
-                {navItems.map((item) => {
+                {filteredNavItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
                   
@@ -106,7 +117,7 @@ const Navigation = ({ activeTab, onTabChange }: NavigationProps) => {
         
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-1">
-          {navItems.map((item) => {
+          {filteredNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             

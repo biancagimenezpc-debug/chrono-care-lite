@@ -5,6 +5,7 @@ import PatientList from "@/components/PatientList";
 import AppointmentManager from "@/components/AppointmentManager";
 import Configuration from "@/components/Configuration";
 import MedicalHistory from "@/components/MedicalHistory";
+import Reports from "@/components/Reports";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -19,6 +20,8 @@ const Index = () => {
         return <AppointmentManager />;
       case "historias":
         return <MedicalHistory />;
+      case "informes":
+        return <Reports />;
       case "configuracion":
         return <Configuration />;
       default:
