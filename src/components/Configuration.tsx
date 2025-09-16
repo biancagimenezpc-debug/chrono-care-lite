@@ -261,18 +261,19 @@ const Configuration = () => {
           </CardContent>
         </Card>
 
-        {/* Configuración del Sistema */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="w-5 h-5" />
-              Configuración del Sistema
-            </CardTitle>
-            <CardDescription>
-              Personaliza las preferencias y notificaciones del sistema
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
+        {/* Configuración del Sistema - Solo para Administradores */}
+        {isAdmin && (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="w-5 h-5" />
+                Configuración del Sistema
+              </CardTitle>
+              <CardDescription>
+                Personaliza las preferencias y notificaciones del sistema
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-4">
                 <h4 className="font-medium text-foreground">Notificaciones</h4>
@@ -389,6 +390,7 @@ const Configuration = () => {
             </div>
           </CardContent>
         </Card>
+        )}
       </div>
     </div>
   );
