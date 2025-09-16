@@ -1,15 +1,20 @@
 import * as React from "react"
-import { format } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
 import { Input } from "@/components/ui/input"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface BirthDatePickerProps {
   value?: string
@@ -18,68 +23,112 @@ interface BirthDatePickerProps {
 }
 
 export function BirthDatePicker({ value, onChange, placeholder = "Seleccionar fecha" }: BirthDatePickerProps) {
-  const [date, setDate] = React.useState<Date | undefined>(value ? new Date(value) : undefined)
   const [isOpen, setIsOpen] = React.useState(false)
-  const [selectedYear, setSelectedYear] = React.useState<number>(() => {
-    if (value) {
-      return new Date(value).getFullYear()
-    }
-    return new Date().getFullYear() - 25 // Default to 25 years ago
-  })
-  const [selectedMonth, setSelectedMonth] = React.useState<number>(() => {
-    if (value) {
-      return new Date(value).getMonth()
-    }
-    return 0 // January
-  })
+  const [selectedDay, setSelectedDay] = React.useState<string>("")
+  const [selectedMonth, setSelectedMonth] = React.useState<string>("")
+  const [selectedYear, setSelectedYear] = React.useState<string>("")
 
-  const handleDateChange = (selectedDate: Date | undefined, closePopover: boolean = true) => {
-    setDate(selectedDate)
-    if (selectedDate) {
-      setSelectedYear(selectedDate.getFullYear())
-      setSelectedMonth(selectedDate.getMonth())
-      // Format date as YYYY-MM-DD for the backend
-      const formattedDate = format(selectedDate, "yyyy-MM-dd")
-      onChange(formattedDate)
-      if (closePopover) {
-        setIsOpen(false) // Close popover after selection
+  // Parse initial value if provided
+  React.useEffect(() => {
+    if (value) {
+      const date = new Date(value)
+      if (!isNaN(date.getTime())) {
+        setSelectedDay(String(date.getDate()).padStart(2, '0'))
+        setSelectedMonth(String(date.getMonth() + 1).padStart(2, '0'))
+        setSelectedYear(String(date.getFullYear()))
       }
-    } else {
-      onChange("")
     }
-  }
+  }, [value])
 
-  const handleYearChange = (newYear: number) => {
-    setSelectedYear(newYear)
-    const newDate = new Date(date || new Date(newYear, selectedMonth, 1))
-    newDate.setFullYear(newYear)
-    handleDateChange(newDate, false) // Don't close popover when changing year
-  }
-
-  const handleMonthChange = (newMonth: number) => {
-    setSelectedMonth(newMonth)
-    const newDate = new Date(date || new Date(selectedYear, newMonth, 1))
-    newDate.setMonth(newMonth)
-    handleDateChange(newDate, false) // Don't close popover when changing month
-  }
+  // Update parent when any part changes
+  React.useEffect(() => {
+    if (selectedDay && selectedMonth && selectedYear) {
+      const dateString = `${selectedYear}-${selectedMonth}-${selectedDay}`
+      const date = new Date(dateString)
+      if (!isNaN(date.getTime())) {
+        onChange(dateString)
+      }
+    }
+  }, [selectedDay, selectedMonth, selectedYear, onChange])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value
     onChange(inputValue)
     
-    // Try to parse the input as a date
+    // Parse the input value
     if (inputValue) {
-      const parsedDate = new Date(inputValue)
-      if (!isNaN(parsedDate.getTime())) {
-        setDate(parsedDate)
-        setSelectedYear(parsedDate.getFullYear())
-        setSelectedMonth(parsedDate.getMonth())
+      const date = new Date(inputValue)
+      if (!isNaN(date.getTime())) {
+        setSelectedDay(String(date.getDate()).padStart(2, '0'))
+        setSelectedMonth(String(date.getMonth() + 1).padStart(2, '0'))
+        setSelectedYear(String(date.getFullYear()))
       }
     } else {
-      setDate(undefined)
+      setSelectedDay("")
+      setSelectedMonth("")
+      setSelectedYear("")
     }
   }
 
+  const clearSelection = () => {
+    setSelectedDay("")
+    setSelectedMonth("")
+    setSelectedYear("")
+    onChange("")
+  }
+
+  const handleApply = () => {
+    if (selectedDay && selectedMonth && selectedYear) {
+      const dateString = `${selectedYear}-${selectedMonth}-${selectedDay}`
+      onChange(dateString)
+    }
+    setIsOpen(false)
+  }
+
+  // Generate years (last 120 years)
+  const years = Array.from({ length: 120 }, (_, i) => {
+    const year = new Date().getFullYear() - i
+    return { value: String(year), label: String(year) }
+  })
+
+  // Generate months
+  const months = [
+    { value: "01", label: "Enero" },
+    { value: "02", label: "Febrero" },
+    { value: "03", label: "Marzo" },
+    { value: "04", label: "Abril" },
+    { value: "05", label: "Mayo" },
+    { value: "06", label: "Junio" },
+    { value: "07", label: "Julio" },
+    { value: "08", label: "Agosto" },
+    { value: "09", label: "Septiembre" },
+    { value: "10", label: "Octubre" },
+    { value: "11", label: "Noviembre" },
+    { value: "12", label: "Diciembre" }
+  ]
+
+  // Generate days based on selected month and year
+  const getDaysInMonth = () => {
+    if (!selectedMonth || !selectedYear) return 31
+    return new Date(parseInt(selectedYear), parseInt(selectedMonth), 0).getDate()
+  }
+
+  const days = Array.from({ length: getDaysInMonth() }, (_, i) => {
+    const day = i + 1
+    return { value: String(day).padStart(2, '0'), label: String(day) }
+  })
+
+  const getDisplayValue = () => {
+    if (value) {
+      const date = new Date(value)
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleDateString('es-ES')
+      }
+    }
+    return placeholder
+  }
+
+  return (
   return (
     <div className="flex gap-2">
       <Input
@@ -95,64 +144,88 @@ export function BirthDatePicker({ value, onChange, placeholder = "Seleccionar fe
             variant={"outline"}
             className={cn(
               "justify-center text-left font-normal min-w-[40px]",
-              !date && "text-muted-foreground"
+              !value && "text-muted-foreground"
             )}
             size="icon"
           >
             <CalendarIcon className="h-4 w-4" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <div className="p-3" onMouseDown={(e) => e.preventDefault()}>
-            <div className="flex items-center justify-between gap-2 mb-3">
-              <select
-                value={selectedYear}
-                onChange={(e) => handleYearChange(parseInt(e.target.value))}
-                className="px-2 py-1 border rounded text-sm flex-1"
-                onMouseDown={(e) => e.stopPropagation()}
-                onClick={(e) => e.stopPropagation()}
+        <PopoverContent className="w-80 p-4" align="start">
+          <div className="space-y-4">
+            <div className="text-center font-medium text-sm">
+              {getDisplayValue()}
+            </div>
+            
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Año</label>
+                <Select value={selectedYear} onValueChange={setSelectedYear}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar año" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[200px]">
+                    {years.map((year) => (
+                      <SelectItem key={year.value} value={year.value}>
+                        {year.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium mb-1 block">Mes</label>
+                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar mes" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {months.map((month) => (
+                      <SelectItem key={month.value} value={month.value}>
+                        {month.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium mb-1 block">Día</label>
+                <Select value={selectedDay} onValueChange={setSelectedDay}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar día" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[200px]">
+                    {days.map((day) => (
+                      <SelectItem key={day.value} value={day.value}>
+                        {day.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="flex gap-2 pt-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={clearSelection}
+                className="flex-1"
               >
-                {Array.from({ length: 120 }, (_, i) => {
-                  const year = new Date().getFullYear() - i
-                  return (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  )
-                })}
-              </select>
-              <select
-                value={selectedMonth}
-                onChange={(e) => handleMonthChange(parseInt(e.target.value))}
-                className="px-2 py-1 border rounded text-sm flex-1"
-                onMouseDown={(e) => e.stopPropagation()}
-                onClick={(e) => e.stopPropagation()}
+                Limpiar
+              </Button>
+              <Button 
+                size="sm" 
+                onClick={handleApply}
+                disabled={!selectedDay || !selectedMonth || !selectedYear}
+                className="flex-1"
               >
-                {Array.from({ length: 12 }, (_, i) => {
-                  const monthName = new Date(2000, i, 1).toLocaleDateString('es-ES', { month: 'long' })
-                  return (
-                    <option key={i} value={i}>
-                      {monthName}
-                    </option>
-                  )
-                })}
-              </select>
+                Aplicar
+              </Button>
             </div>
           </div>
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={handleDateChange}
-            disabled={(date) =>
-              date > new Date() || date < new Date("1900-01-01")
-            }
-            month={new Date(selectedYear, selectedMonth)}
-            onMonthChange={(month) => {
-              setSelectedYear(month.getFullYear())
-              setSelectedMonth(month.getMonth())
-            }}
-            className={cn("p-3 pointer-events-auto")}
-          />
         </PopoverContent>
       </Popover>
     </div>
