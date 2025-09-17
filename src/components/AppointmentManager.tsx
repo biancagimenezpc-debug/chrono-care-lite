@@ -16,6 +16,7 @@ import { useAppointments } from "@/hooks/useAppointments";
 import { useConfiguration } from "@/hooks/useConfiguration";
 import { PatientSelector } from "@/components/PatientSelector";
 import { toast } from "@/hooks/use-toast";
+import AppointmentDetails from "@/components/AppointmentDetails";
 
 // Esquema de validación para nueva cita
 const newAppointmentSchema = z.object({
@@ -39,6 +40,8 @@ const AppointmentManager = () => {
   const [isRescheduleDialogOpen, setIsRescheduleDialogOpen] = useState(false);
   const [selectedPatientPhone, setSelectedPatientPhone] = useState("");
   const [appointmentToReschedule, setAppointmentToReschedule] = useState<any>(null);
+  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const { appointments, loading, createAppointment, updateAppointment, deleteAppointment } = useAppointments();
   const { configuration, getAvailableTimeSlots, isWorkingDay } = useConfiguration();
 
@@ -114,6 +117,11 @@ const AppointmentManager = () => {
     } catch (error) {
       // Error handled in hook
     }
+  };
+
+  const handleAppointmentClick = (appointment: any) => {
+    setSelectedAppointment(appointment);
+    setIsDetailsDialogOpen(true);
   };
 
   const onRescheduleSubmit = async (data: NewAppointmentForm) => {
@@ -688,7 +696,11 @@ const AppointmentManager = () => {
           <CardContent>
             <div className="space-y-4">
               {todayAppointments.map((appointment) => (
-                <div key={appointment.id} className="border border-border rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div 
+                  key={appointment.id} 
+                  className="border border-border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => handleAppointmentClick(appointment)}
+                >
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-2">
@@ -716,6 +728,14 @@ const AppointmentManager = () => {
                         <div className="mt-2">
                           <span className="text-sm font-medium text-foreground">Notas: </span>
                           <span className="text-sm text-muted-foreground">{appointment.notes}</span>
+                        </div>
+                      )}
+                      
+                      {/* Creator info preview */}
+                      {(appointment as any).doctor && (
+                        <div className="mt-2 text-xs text-muted-foreground">
+                          Creado por: {(appointment as any).doctor.full_name || 'Usuario desconocido'} 
+                          ({(appointment as any).doctor.role === 'admin' ? 'Administrador' : 'Doctor'})
                         </div>
                       )}
                     </div>
@@ -796,6 +816,13 @@ const AppointmentManager = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Appointment Details Dialog */}
+      <AppointmentDetails
+        appointment={selectedAppointment}
+        isOpen={isDetailsDialogOpen}
+        onClose={() => setIsDetailsDialogOpen(false)}
+      />
     </div>
   );
 };

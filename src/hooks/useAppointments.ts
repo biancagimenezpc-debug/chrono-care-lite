@@ -14,15 +14,39 @@ export const useAppointments = () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Usuario no autenticado')
 
-      const { data, error } = await supabase
+      // First get the appointments
+      const { data: appointmentsData, error: appointmentsError } = await supabase
         .from('appointments')
         .select('*')
         .eq('doctor_id', user.id)
         .order('date', { ascending: true })
         .order('time', { ascending: true })
 
-      if (error) throw error
-      setAppointments(data || [])
+      if (appointmentsError) throw appointmentsError
+
+      // Then get the user profiles for the doctors
+      if (appointmentsData && appointmentsData.length > 0) {
+        const doctorIds = [...new Set(appointmentsData.map(apt => apt.doctor_id))]
+        const { data: doctorsData, error: doctorsError } = await supabase
+          .from('user_profiles')
+          .select('user_id, full_name, role, specialty')
+          .in('user_id', doctorIds)
+
+        if (doctorsError) throw doctorsError
+
+        // Combine the data
+        const appointmentsWithDoctors = appointmentsData.map(appointment => {
+          const doctor = doctorsData?.find(doc => doc.user_id === appointment.doctor_id)
+          return {
+            ...appointment,
+            doctor: doctor || null
+          }
+        })
+        
+        setAppointments(appointmentsWithDoctors)
+      } else {
+        setAppointments([])
+      }
     } catch (error: any) {
       toast({
         title: "Error al cargar citas",

@@ -6,6 +6,7 @@ import { usePatients } from "@/hooks/usePatients";
 import { useAppointments } from "@/hooks/useAppointments";
 import { useMedicalRecords } from "@/hooks/useMedicalRecords";
 import { useToast } from "@/hooks/use-toast";
+import AppointmentDetails from "@/components/AppointmentDetails";
 
 interface DashboardProps {
   onNavigate?: (tab: string) => void;
@@ -17,6 +18,8 @@ const Dashboard = ({ onNavigate }: DashboardProps = {}) => {
   const { appointments, loading: appointmentsLoading } = useAppointments();
   const { records: medicalRecords, loading: recordsLoading } = useMedicalRecords();
   const [navigationAction, setNavigationAction] = useState<string | null>(null);
+  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
 
   // Calculate today's date and current time for filtering
   const now = new Date();
@@ -101,6 +104,11 @@ const Dashboard = ({ onNavigate }: DashboardProps = {}) => {
         }
       }
     }, 200);
+  };
+
+  const handleAppointmentClick = (appointment: any) => {
+    setSelectedAppointment(appointment);
+    setIsDetailsDialogOpen(true);
   };
 
   const loading = patientsLoading || appointmentsLoading || recordsLoading;
@@ -211,11 +219,21 @@ const Dashboard = ({ onNavigate }: DashboardProps = {}) => {
                   });
                   
                   return (
-                    <div key={cita.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div 
+                      key={cita.id} 
+                      className="flex items-center justify-between p-3 bg-muted rounded-lg cursor-pointer hover:bg-muted/80 transition-colors"
+                      onClick={() => handleAppointmentClick(cita)}
+                    >
                       <div>
                         <p className="font-medium text-foreground">{cita.patient_name}</p>
                         <p className="text-sm text-muted-foreground">{cita.consultation_type}</p>
                         <p className="text-xs text-muted-foreground">{dateLabel}</p>
+                        {/* Show creator info */}
+                        {(cita as any).doctor && (
+                          <p className="text-xs text-muted-foreground">
+                            Por: {(cita as any).doctor.full_name || 'Usuario desconocido'}
+                          </p>
+                        )}
                       </div>
                       <div className="text-right">
                         <span className="text-sm font-medium text-primary">{cita.time}</span>
@@ -262,6 +280,13 @@ const Dashboard = ({ onNavigate }: DashboardProps = {}) => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Appointment Details Dialog */}
+      <AppointmentDetails
+        appointment={selectedAppointment}
+        isOpen={isDetailsDialogOpen}
+        onClose={() => setIsDetailsDialogOpen(false)}
+      />
     </div>
   );
 };
