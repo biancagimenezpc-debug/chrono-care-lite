@@ -8,7 +8,7 @@ export const useBackup = () => {
       const backupData: any = {}
       
       // Backup all tables
-      const tables = ['patients', 'appointments', 'medical_records', 'configurations', 'user_profiles']
+      const tables = ['patients', 'appointments', 'medical_records', 'configurations', 'user_profiles'] as const
       
       for (const table of tables) {
         const { data, error } = await supabase
