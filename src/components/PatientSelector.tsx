@@ -20,9 +20,11 @@ export const PatientSelector = ({
 }: PatientSelectorProps) => {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState(-1);
   const { patients, loading } = usePatients();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const selectedPatient = patients.find(patient => patient.name === value);
 
@@ -46,15 +48,69 @@ export const PatientSelector = ({
     });
     console.log('PatientSelector: patient selected successfully');
     setSearchTerm("");
+    setSelectedIndex(-1);
     setOpen(false);
   };
+
+  // Reset search and selection when dropdown closes
+  const closeDropdown = () => {
+    setOpen(false);
+    setSearchTerm("");
+    setSelectedIndex(-1);
+  };
+
+  // Handle keyboard navigation
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!open) {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        setOpen(true);
+        setSelectedIndex(0);
+      }
+      return;
+    }
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedIndex(prev => 
+          prev < filteredPatients.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedIndex(prev => 
+          prev > 0 ? prev - 1 : filteredPatients.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (selectedIndex >= 0 && filteredPatients[selectedIndex]) {
+          handleSelect(filteredPatients[selectedIndex]);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        closeDropdown();
+        break;
+      case 'Tab':
+        closeDropdown();
+        break;
+    }
+  };
+
+  // Update selected index when filtered patients change
+  useEffect(() => {
+    if (selectedIndex >= filteredPatients.length) {
+      setSelectedIndex(filteredPatients.length > 0 ? 0 : -1);
+    }
+  }, [filteredPatients, selectedIndex]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setOpen(false);
-        setSearchTerm("");
+        closeDropdown();
       }
     };
 
@@ -86,6 +142,7 @@ export const PatientSelector = ({
         aria-expanded={open}
         className="w-full justify-between"
         onClick={() => setOpen(!open)}
+        onKeyDown={handleKeyDown}
       >
         <div className="flex items-center space-x-2">
           <User className="h-4 w-4" />
@@ -107,10 +164,15 @@ export const PatientSelector = ({
             <div className="relative">
               <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
+                ref={searchInputRef}
                 type="text"
                 placeholder="Buscar paciente..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setSelectedIndex(0); // Reset selection when searching
+                }}
+                onKeyDown={handleKeyDown}
                 className="pl-8"
                 autoFocus
               />
@@ -129,15 +191,18 @@ export const PatientSelector = ({
               </div>
             ) : (
               <div className="py-1">
-                {filteredPatients.map((patient) => (
+                {filteredPatients.map((patient, index) => (
                   <div
                     key={patient.id}
                     className={cn(
-                      "flex items-center justify-between w-full px-3 py-2 cursor-pointer hover:bg-accent transition-colors text-sm",
-                      value === patient.name && "bg-accent"
+                      "flex items-center justify-between w-full px-3 py-2 cursor-pointer transition-colors text-sm",
+                      value === patient.name && "bg-accent",
+                      selectedIndex === index && "bg-accent",
+                      "hover:bg-accent"
                     )}
                     onMouseDown={(e) => handlePatientClick(e, patient)}
                     onTouchStart={(e) => handlePatientTouch(e, patient)}
+                    onMouseEnter={() => setSelectedIndex(index)}
                   >
                     <div className="flex items-center space-x-3">
                       <User className="h-4 w-4 text-muted-foreground" />
