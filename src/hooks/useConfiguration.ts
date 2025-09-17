@@ -231,9 +231,12 @@ export const useConfiguration = () => {
   // Helper function to get current date in Buenos Aires timezone
   const getCurrentDateBuenosAires = (): string => {
     const now = new Date()
-    // Convert to Buenos Aires time (GMT-3)
-    const buenosAiresTime = new Date(now.getTime() - (3 * 60 * 60 * 1000))
-    return buenosAiresTime.toISOString().split('T')[0]
+    // Create a date object using local timezone (which should be Buenos Aires GMT-3)
+    // Use local timezone methods instead of UTC conversion
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
   }
 
   useEffect(() => {

@@ -18,7 +18,7 @@ const Dashboard = ({ onNavigate }: DashboardProps = {}) => {
   const { records: medicalRecords, loading: recordsLoading } = useMedicalRecords();
   const [navigationAction, setNavigationAction] = useState<string | null>(null);
 
-  // Calculate today's date and current time for filtering
+  // Calculate today's date and current time for filtering using local timezone
   const now = new Date();
   const today = now.getFullYear() + '-' + 
     String(now.getMonth() + 1).padStart(2, '0') + '-' + 
