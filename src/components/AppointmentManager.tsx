@@ -698,11 +698,13 @@ const AppointmentManager = () => {
               {todayAppointments.map((appointment) => (
                 <div 
                   key={appointment.id} 
-                  className="border border-border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
-                  onClick={() => handleAppointmentClick(appointment)}
+                  className="border border-border rounded-lg p-4 hover:shadow-md transition-shadow"
                 >
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div className="flex-1">
+                    <div 
+                      className="flex-1 cursor-pointer" 
+                      onClick={() => handleAppointmentClick(appointment)}
+                    >
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="text-lg font-semibold text-foreground flex items-center space-x-2">
                           <User className="w-4 h-4" />
@@ -744,7 +746,10 @@ const AppointmentManager = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => handleReschedule(appointment)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleReschedule(appointment);
+                        }}
                         className="w-full sm:w-auto"
                       >
                         <RotateCcw className="w-4 h-4 sm:mr-1" />
@@ -756,6 +761,7 @@ const AppointmentManager = () => {
                           <Button 
                             variant="destructive" 
                             size="sm"
+                            onClick={(e) => e.stopPropagation()}
                             className="w-full sm:w-auto"
                           >
                             <Trash2 className="w-4 h-4 sm:mr-1" />
@@ -781,7 +787,10 @@ const AppointmentManager = () => {
                       <Button 
                         variant="default" 
                         size="sm"
-                        onClick={() => handleAttend(appointment)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAttend(appointment);
+                        }}
                         disabled={appointment.status === 'completada'}
                         className="w-full sm:w-auto"
                       >
@@ -822,6 +831,9 @@ const AppointmentManager = () => {
         appointment={selectedAppointment}
         isOpen={isDetailsDialogOpen}
         onClose={() => setIsDetailsDialogOpen(false)}
+        onReschedule={handleReschedule}
+        onDelete={deleteAppointment}
+        onAttend={handleAttend}
       />
     </div>
   );

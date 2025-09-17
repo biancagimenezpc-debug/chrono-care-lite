@@ -294,6 +294,26 @@ const Dashboard = ({ onNavigate }: DashboardProps = {}) => {
         appointment={selectedAppointment}
         isOpen={isDetailsDialogOpen}
         onClose={() => setIsDetailsDialogOpen(false)}
+        onReschedule={(appointment) => {
+          // Navigate to appointments section for rescheduling
+          if (onNavigate) {
+            onNavigate('turnos');
+          }
+        }}
+        onDelete={(appointmentId) => {
+          // Note: Delete functionality would need to be implemented here
+          // For now, navigate to appointments section
+          if (onNavigate) {
+            onNavigate('turnos');
+          }
+        }}
+        onAttend={(appointment) => {
+          // Note: Attend functionality would need to be implemented here
+          // For now, navigate to appointments section
+          if (onNavigate) {
+            onNavigate('turnos');
+          }
+        }}
       />
     </div>
   );

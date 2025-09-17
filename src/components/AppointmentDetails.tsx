@@ -1,7 +1,9 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, Clock, User, Phone, FileText, UserCheck, Stethoscope, Shield } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Calendar, Clock, User, Phone, FileText, UserCheck, Stethoscope, Shield, RotateCcw, Trash2 } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Appointment = Tables<'appointments'> & {
@@ -16,9 +18,12 @@ interface AppointmentDetailsProps {
   appointment: Appointment | null;
   isOpen: boolean;
   onClose: () => void;
+  onReschedule?: (appointment: Appointment) => void;
+  onDelete?: (appointmentId: string) => void;
+  onAttend?: (appointment: Appointment) => void;
 }
 
-const AppointmentDetails = ({ appointment, isOpen, onClose }: AppointmentDetailsProps) => {
+const AppointmentDetails = ({ appointment, isOpen, onClose, onReschedule, onDelete, onAttend }: AppointmentDetailsProps) => {
   if (!appointment) return null;
 
   const getStatusColor = (status: string) => {
@@ -157,6 +162,73 @@ const AppointmentDetails = ({ appointment, isOpen, onClose }: AppointmentDetails
           <div className="text-xs text-muted-foreground text-center">
             Cita creada el {new Date(appointment.created_at).toLocaleString('es-ES')}
           </div>
+
+          {/* Action Buttons */}
+          {(onReschedule || onDelete || onAttend) && (
+            <>
+              <Separator />
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                {onReschedule && (
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => {
+                      onReschedule(appointment);
+                      onClose();
+                    }}
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Reprogramar
+                  </Button>
+                )}
+                
+                {onDelete && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" className="flex-1">
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Eliminar
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>¿Eliminar cita?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta acción no se puede deshacer. Se eliminará permanentemente la cita de {appointment.patient_name} del {appointment.date} a las {appointment.time}.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={() => {
+                            onDelete(appointment.id);
+                            onClose();
+                          }}
+                        >
+                          Eliminar
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+                
+                {onAttend && (
+                  <Button 
+                    variant="default" 
+                    className="flex-1"
+                    onClick={() => {
+                      onAttend(appointment);
+                      onClose();
+                    }}
+                    disabled={appointment.status === 'completada'}
+                  >
+                    <UserCheck className="w-4 h-4 mr-2" />
+                    {appointment.status === 'completada' ? 'Atendido' : 'Atender'}
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>
