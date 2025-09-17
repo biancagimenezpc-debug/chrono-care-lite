@@ -25,7 +25,9 @@ export const PatientSelector = ({
   const selectedPatient = patients.find(patient => patient.name === value);
 
   const handleSelect = (patientName: string) => {
+    console.log('PatientSelector: handleSelect called with:', patientName);
     const patient = patients.find(p => p.name === patientName);
+    console.log('PatientSelector: found patient:', patient);
     if (patient) {
       onValueChange(patient.name);
       onPatientSelect?.({ 
@@ -33,6 +35,7 @@ export const PatientSelector = ({
         name: patient.name, 
         phone: patient.phone || "" 
       });
+      console.log('PatientSelector: patient selected successfully');
     }
     setOpen(false);
   };
@@ -70,8 +73,15 @@ export const PatientSelector = ({
                 <CommandItem
                   key={patient.id}
                   value={patient.name}
-                  onSelect={() => handleSelect(patient.name)}
-                  className="cursor-pointer"
+                  onSelect={(currentValue) => {
+                    // Find patient by name since CommandItem passes the value
+                    const selectedPatient = patients.find(p => p.name.toLowerCase() === currentValue.toLowerCase());
+                    if (selectedPatient) {
+                      handleSelect(selectedPatient.name);
+                    }
+                  }}
+                  onClick={() => handleSelect(patient.name)}
+                  className="cursor-pointer hover:bg-accent"
                 >
                   <div className="flex items-center justify-between w-full">
                     <div className="flex items-center space-x-2">
