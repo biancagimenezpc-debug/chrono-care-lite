@@ -11,9 +11,13 @@ export const useMedicalRecords = () => {
 
   const fetchRecords = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Usuario no autenticado')
+
       const { data, error } = await supabase
         .from('medical_records')
         .select('*')
+        .eq('doctor_id', user.id)
         .order('date', { ascending: false })
 
       if (error) throw error

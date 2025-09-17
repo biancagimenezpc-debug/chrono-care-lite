@@ -11,9 +11,13 @@ export const useAppointments = () => {
 
   const fetchAppointments = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Usuario no autenticado')
+
       const { data, error } = await supabase
         .from('appointments')
         .select('*')
+        .eq('doctor_id', user.id)
         .order('date', { ascending: true })
         .order('time', { ascending: true })
 
