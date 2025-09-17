@@ -16,7 +16,7 @@ import { usePatients } from "@/hooks/usePatients";
 import { useMedicalRecords } from "@/hooks/useMedicalRecords";
 import { Patient } from "@/lib/supabase";
 import type { Tables } from "@/integrations/supabase/types";
-import { BirthDatePicker } from "@/components/BirthDatePicker";
+import { BirthDatePicker, convertToISODate } from "@/components/BirthDatePicker";
 
 type MedicalRecord = Tables<'medical_records'>;
 
@@ -68,11 +68,22 @@ const PatientList = () => {
 
   const onSubmit = async (data: NewPatientForm) => {
     try {
+      // Convert birth date from DD/MM/YYYY to ISO format
+      const isoDate = convertToISODate(data.birth_date)
+      if (!isoDate) {
+        // If conversion fails, show error
+        form.setError('birth_date', {
+          type: 'manual',
+          message: 'Formato de fecha inválido. Use DD/MM/AAAA'
+        })
+        return
+      }
+      
       const patientData: Omit<Patient, 'id' | 'created_at'> = {
         name: data.name,
         email: data.email || undefined,
         phone: data.phone,
-        birth_date: data.birth_date,
+        birth_date: isoDate, // Use converted ISO date
         gender: data.gender,
         address: data.address || undefined,
         emergency_contact: data.emergency_contact || undefined,
@@ -142,11 +153,22 @@ const PatientList = () => {
     if (!editingPatient) return;
     
     try {
+      // Convert birth date from DD/MM/YYYY to ISO format
+      const isoDate = convertToISODate(data.birth_date)
+      if (!isoDate) {
+        // If conversion fails, show error
+        editForm.setError('birth_date', {
+          type: 'manual',
+          message: 'Formato de fecha inválido. Use DD/MM/AAAA'
+        })
+        return
+      }
+      
       const patientData: Partial<Patient> = {
         name: data.name,
         email: data.email || undefined,
         phone: data.phone,
-        birth_date: data.birth_date,
+        birth_date: isoDate, // Use converted ISO date
         gender: data.gender,
         address: data.address || undefined,
         emergency_contact: data.emergency_contact || undefined,
