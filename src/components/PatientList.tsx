@@ -70,23 +70,13 @@ const PatientList = () => {
 
   const onSubmit = async (data: NewPatientForm) => {
     try {
-      // Convert birth date from DD/MM/YYYY to ISO format
-      const isoDate = convertToISODate(data.birth_date)
-      if (!isoDate) {
-        // If conversion fails, show error
-        form.setError('birth_date', {
-          type: 'manual',
-          message: 'Formato de fecha inválido. Use DD/MM/AAAA'
-        })
-        return
-      }
-      
+      // Since we're using HTML date input, the date is already in ISO format (YYYY-MM-DD)
       const patientData: Omit<Patient, 'id' | 'created_at'> = {
         name: data.name,
         dni: data.dni,
         email: data.email || undefined,
         phone: data.phone,
-        birth_date: isoDate, // Use converted ISO date
+        birth_date: data.birth_date, // Already in ISO format
         gender: data.gender,
         address: data.address || undefined,
         emergency_contact: data.emergency_contact || undefined,
@@ -158,23 +148,13 @@ const PatientList = () => {
     if (!editingPatient) return;
     
     try {
-      // Convert birth date from DD/MM/YYYY to ISO format
-      const isoDate = convertToISODate(data.birth_date)
-      if (!isoDate) {
-        // If conversion fails, show error
-        editForm.setError('birth_date', {
-          type: 'manual',
-          message: 'Formato de fecha inválido. Use DD/MM/AAAA'
-        })
-        return
-      }
-      
+      // Since we're using HTML date input, the date is already in ISO format (YYYY-MM-DD)
       const patientData: Partial<Patient> = {
         name: data.name,
         dni: data.dni,
         email: data.email || undefined,
         phone: data.phone,
-        birth_date: isoDate, // Use converted ISO date
+        birth_date: data.birth_date, // Already in ISO format
         gender: data.gender,
         address: data.address || undefined,
         emergency_contact: data.emergency_contact || undefined,
@@ -282,9 +262,7 @@ const PatientList = () => {
                       </FormItem>
                     )}
                   />
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="phone"
@@ -298,7 +276,9 @@ const PatientList = () => {
                       </FormItem>
                     )}
                   />
+                </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="birth_date"
@@ -306,19 +286,16 @@ const PatientList = () => {
                       <FormItem>
                         <FormLabel>Fecha de Nacimiento *</FormLabel>
                         <FormControl>
-                          <BirthDatePicker
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="Seleccionar fecha de nacimiento"
+                          <Input 
+                            type="date"
+                            {...field} 
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="gender"
@@ -341,7 +318,9 @@ const PatientList = () => {
                       </FormItem>
                     )}
                   />
+                </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="insurance"
@@ -531,9 +510,7 @@ const PatientList = () => {
                       </FormItem>
                     )}
                   />
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={editForm.control}
                     name="phone"
@@ -547,7 +524,9 @@ const PatientList = () => {
                       </FormItem>
                     )}
                   />
+                </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={editForm.control}
                     name="birth_date"
@@ -555,19 +534,16 @@ const PatientList = () => {
                       <FormItem>
                         <FormLabel>Fecha de Nacimiento *</FormLabel>
                         <FormControl>
-                          <BirthDatePicker
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="Seleccionar fecha de nacimiento"
+                          <Input 
+                            type="date"
+                            {...field} 
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={editForm.control}
                     name="gender"
@@ -590,7 +566,9 @@ const PatientList = () => {
                       </FormItem>
                     )}
                   />
+                </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={editForm.control}
                     name="insurance"
