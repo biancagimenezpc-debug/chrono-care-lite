@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Check, ChevronsUpDown, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePatients } from "@/hooks/usePatients";
@@ -35,19 +36,15 @@ export const PatientSelector = ({
     );
   });
 
-  const handleSelect = (patientName: string) => {
-    console.log('PatientSelector: handleSelect called with:', patientName);
-    const patient = patients.find(p => p.name === patientName);
-    console.log('PatientSelector: found patient:', patient);
-    if (patient) {
-      onValueChange(patient.name);
-      onPatientSelect?.({ 
-        id: patient.id,
-        name: patient.name, 
-        phone: patient.phone || "" 
-      });
-      console.log('PatientSelector: patient selected successfully');
-    }
+  const handleSelect = (patient: any) => {
+    console.log('PatientSelector: handleSelect called with:', patient.name);
+    onValueChange(patient.name);
+    onPatientSelect?.({
+      id: patient.id,
+      name: patient.name,
+      phone: patient.phone || ""
+    });
+    console.log('PatientSelector: patient selected successfully');
     setSearchTerm(""); // Clear search when selecting
     setOpen(false);
   };
@@ -79,63 +76,56 @@ export const PatientSelector = ({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" style={{ width: "var(--radix-popover-trigger-width)" }}>
-        <Command shouldFilter={false}>
-          <CommandInput 
-            placeholder="Buscar paciente..." 
-            className="h-9"
+        <div className="p-2">
+          <Input
+            placeholder="Buscar paciente..."
             value={searchTerm}
-            onValueChange={setSearchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="mb-2"
           />
-          <CommandList className="max-h-60 overflow-y-auto">
-            <CommandEmpty>
-              {loading ? "Cargando pacientes..." : "No se encontraron pacientes."}
-            </CommandEmpty>
-            <CommandGroup>
-              {filteredPatients.map((patient) => (
-                <CommandItem
+        </div>
+        <ScrollArea className="max-h-60">
+          <div className="p-1">
+            {loading ? (
+              <div className="p-2 text-center text-sm text-muted-foreground">
+                Cargando pacientes...
+              </div>
+            ) : filteredPatients.length === 0 ? (
+              <div className="p-2 text-center text-sm text-muted-foreground">
+                No se encontraron pacientes.
+              </div>
+            ) : (
+              filteredPatients.map((patient) => (
+                <div
                   key={patient.id}
-                  value={patient.name}
-                  onSelect={(currentValue) => {
-                    console.log('CommandItem onSelect triggered with:', currentValue);
-                    handleSelect(patient.name);
-                  }}
-                  onMouseDown={(e) => {
-                    // Prevent default to avoid interfering with click
-                    e.preventDefault();
-                  }}
-                  onMouseUp={(e) => {
-                    // Handle the actual click on mouse up
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('CommandItem onMouseUp triggered for:', patient.name);
-                    handleSelect(patient.name);
-                  }}
-                  className="cursor-pointer hover:bg-accent data-[selected=true]:bg-accent focus:bg-accent"
+                  onClick={() => handleSelect(patient)}
+                  className={cn(
+                    "flex items-center justify-between w-full p-2 rounded-md cursor-pointer hover:bg-accent transition-colors",
+                    value === patient.name && "bg-accent"
+                  )}
                 >
-                  <div className="flex items-center justify-between w-full pointer-events-none">
-                    <div className="flex items-center space-x-2">
-                      <User className="h-4 w-4" />
-                      <div>
-                        <div className="font-medium">{patient.name}</div>
-                        {patient.phone && (
-                          <div className="text-sm text-muted-foreground">
-                            {patient.phone}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <Check
-                      className={cn(
-                        "h-4 w-4",
-                        value === patient.name ? "opacity-100" : "opacity-0"
+                  <div className="flex items-center space-x-2">
+                    <User className="h-4 w-4" />
+                    <div>
+                      <div className="font-medium">{patient.name}</div>
+                      {patient.phone && (
+                        <div className="text-sm text-muted-foreground">
+                          {patient.phone}
+                        </div>
                       )}
-                    />
+                    </div>
                   </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
+                  <Check
+                    className={cn(
+                      "h-4 w-4",
+                      value === patient.name ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                </div>
+              ))
+            )}
+          </div>
+        </ScrollArea>
       </PopoverContent>
     </Popover>
   );
