@@ -30,23 +30,17 @@ const newAppointmentSchema = z.object({
 type NewAppointmentForm = z.infer<typeof newAppointmentSchema>;
 
 const AppointmentManager = () => {
-  const { configuration, getAvailableTimeSlots, isWorkingDay, getCurrentDateBuenosAires } = useConfiguration();
-  
   const [selectedDate, setSelectedDate] = useState(() => {
-    // Use consistent local timezone (Buenos Aires GMT-3)
-    return getCurrentDateBuenosAires ? getCurrentDateBuenosAires() : (() => {
-      const now = new Date()
-      const year = now.getFullYear()
-      const month = String(now.getMonth() + 1).padStart(2, '0')
-      const day = String(now.getDate()).padStart(2, '0')
-      return `${year}-${month}-${day}`
-    })()
+    const now = new Date()
+    // Use local timezone
+    return now.toISOString().split('T')[0]
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isRescheduleDialogOpen, setIsRescheduleDialogOpen] = useState(false);
   const [selectedPatientPhone, setSelectedPatientPhone] = useState("");
   const [appointmentToReschedule, setAppointmentToReschedule] = useState<any>(null);
   const { appointments, loading, createAppointment, updateAppointment, deleteAppointment } = useAppointments();
+  const { configuration, getAvailableTimeSlots, isWorkingDay } = useConfiguration();
 
   const form = useForm<NewAppointmentForm>({
     resolver: zodResolver(newAppointmentSchema),
@@ -226,14 +220,10 @@ const AppointmentManager = () => {
   };
   
   const isCurrentDate = (date: string): boolean => {
-    // Use the same date format as our state management
-    const todayString = getCurrentDateBuenosAires ? getCurrentDateBuenosAires() : (() => {
-      const today = new Date();
-      const year = today.getFullYear()
-      const month = String(today.getMonth() + 1).padStart(2, '0')
-      const day = String(today.getDate()).padStart(2, '0')
-      return `${year}-${month}-${day}`
-    })()
+    const today = new Date();
+    const todayString = today.getFullYear() + '-' + 
+      String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+      String(today.getDate()).padStart(2, '0');
     return date === todayString;
   };
   
@@ -325,12 +315,11 @@ const AppointmentManager = () => {
                         <FormControl>
                           <Input 
                             type="date" 
-                            min={getCurrentDateBuenosAires ? getCurrentDateBuenosAires() : (() => {
+                            min={(() => {
                               const today = new Date();
-                              const year = today.getFullYear()
-                              const month = String(today.getMonth() + 1).padStart(2, '0')
-                              const day = String(today.getDate()).padStart(2, '0')
-                              return `${year}-${month}-${day}`
+                              return today.getFullYear() + '-' + 
+                                String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                                String(today.getDate()).padStart(2, '0');
                             })()} 
                             {...field} 
                           />
@@ -620,13 +609,7 @@ const AppointmentManager = () => {
             <input
               type="date"
               value={selectedDate}
-              min={getCurrentDateBuenosAires ? getCurrentDateBuenosAires() : (() => {
-                const today = new Date();
-                const year = today.getFullYear()
-                const month = String(today.getMonth() + 1).padStart(2, '0')
-                const day = String(today.getDate()).padStart(2, '0')
-                return `${year}-${month}-${day}`
-              })()}
+              min={new Date().toISOString().split('T')[0]}
               onChange={(e) => setSelectedDate(e.target.value)}
               className="w-full p-2 border border-border rounded-md bg-background text-foreground"
             />
@@ -637,14 +620,10 @@ const AppointmentManager = () => {
               size="sm" 
               className="w-full mt-3"
               onClick={() => {
-                // Use the same date format as initial state
-                const todayString = getCurrentDateBuenosAires ? getCurrentDateBuenosAires() : (() => {
-                  const today = new Date();
-                  const year = today.getFullYear()
-                  const month = String(today.getMonth() + 1).padStart(2, '0')
-                  const day = String(today.getDate()).padStart(2, '0')
-                  return `${year}-${month}-${day}`
-                })()
+                const today = new Date();
+                const todayString = today.getFullYear() + '-' + 
+                  String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                  String(today.getDate()).padStart(2, '0');
                 setSelectedDate(todayString);
               }}
             >
