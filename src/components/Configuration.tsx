@@ -129,7 +129,174 @@ const Configuration = () => {
       {/* Gestión de Usuarios - Solo para Administradores */}
       {isAdmin && (
         <Card className="mb-6">
-...
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Gestión de Usuarios
+            </CardTitle>
+            <CardDescription>
+              Administra los usuarios del sistema y sus permisos
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <h4 className="font-medium">Usuarios registrados</h4>
+                <Badge variant="secondary">{users.length}</Badge>
+              </div>
+              <Dialog open={showCreateUser} onOpenChange={setShowCreateUser}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="flex items-center gap-2">
+                    <Plus className="w-4 h-4" />
+                    Nuevo Usuario
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Crear Nuevo Usuario</DialogTitle>
+                    <DialogDescription>
+                      Registra un nuevo usuario en el sistema
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="user-email">Email</Label>
+                      <Input
+                        id="user-email"
+                        type="email"
+                        value={newUser.email}
+                        onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                        placeholder="usuario@ejemplo.com"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="user-password">Contraseña</Label>
+                      <Input
+                        id="user-password"
+                        type="password"
+                        value={newUser.password}
+                        onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+                        placeholder="Contraseña segura"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="user-name">Nombre Completo</Label>
+                      <Input
+                        id="user-name"
+                        value={newUser.full_name}
+                        onChange={(e) => setNewUser(prev => ({ ...prev, full_name: e.target.value }))}
+                        placeholder="Dr. Juan Pérez"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="user-role">Rol</Label>
+                      <Select
+                        value={newUser.role}
+                        onValueChange={(value: 'admin' | 'doctor') => setNewUser(prev => ({ ...prev, role: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="doctor">Doctor</SelectItem>
+                          <SelectItem value="admin">Administrador</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {newUser.role === 'doctor' && (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="user-specialty">Especialidad</Label>
+                          <Input
+                            id="user-specialty"
+                            value={newUser.specialty}
+                            onChange={(e) => setNewUser(prev => ({ ...prev, specialty: e.target.value }))}
+                            placeholder="Cardiología"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="user-license">Número de Colegiado</Label>
+                          <Input
+                            id="user-license"
+                            value={newUser.license_number}
+                            onChange={(e) => setNewUser(prev => ({ ...prev, license_number: e.target.value }))}
+                            placeholder="12345"
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowCreateUser(false)}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button onClick={handleCreateUser}>
+                      Crear Usuario
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+            
+            {usersLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Usuario</TableHead>
+                    <TableHead>Rol</TableHead>
+                    <TableHead>Especialidad</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{user.full_name}</div>
+                          <div className="text-sm text-muted-foreground">{user.email}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                          {user.role === 'admin' ? 'Administrador' : 'Doctor'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {user.specialty || '-'}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={user.is_active ? 'default' : 'destructive'}>
+                          {user.is_active ? 'Activo' : 'Inactivo'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleUserStatus(user.id, !user.is_active)}
+                        >
+                          {user.is_active ? (
+                            <ToggleRight className="w-4 h-4" />
+                          ) : (
+                            <ToggleLeft className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
         </Card>
       )}
 
