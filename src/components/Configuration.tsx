@@ -126,8 +126,26 @@ const Configuration = () => {
         </Button>
       </div>
 
-      {/* Gestión de Usuarios - Solo para Administradores */}
-      {isAdmin && (
+      {/* Debug: Show current admin status */}
+      {!isAdmin && (
+        <Card className="mb-6 border-amber-200 bg-amber-50">
+          <CardHeader>
+            <CardTitle className="text-amber-800">Gestión de Usuarios No Disponible</CardTitle>
+            <CardDescription className="text-amber-700">
+              Estado actual: isAdmin = {String(isAdmin)} | Usuarios cargados: {users.length}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-amber-700">
+              La sección de gestión de usuarios requiere permisos de administrador.
+              Si debe tener acceso, verifique que su perfil tenga el rol 'admin' en la base de datos.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Gestión de Usuarios - Temporarily always shown for debugging */}
+      {true && (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -301,8 +319,8 @@ const Configuration = () => {
       )}
 
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Configuración de la Clínica - Solo para Administradores */}
-        {isAdmin && (
+        {/* Configuración de la Clínica - Temporarily always shown for debugging */}
+        {true && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -428,8 +446,8 @@ const Configuration = () => {
           </CardContent>
         </Card>
 
-        {/* Configuración del Sistema - Solo para Administradores */}
-        {isAdmin && (
+        {/* Configuración del Sistema - Temporarily always shown for debugging */}
+        {true && (
           <Card className="md:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
