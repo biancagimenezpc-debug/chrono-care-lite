@@ -20,9 +20,20 @@ export const PatientSelector = ({
   placeholder = "Seleccionar paciente..." 
 }: PatientSelectorProps) => {
   const [open, setOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const { patients, loading } = usePatients();
 
   const selectedPatient = patients.find(patient => patient.name === value);
+
+  // Filter patients based on search term
+  const filteredPatients = patients.filter(patient => {
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      patient.name.toLowerCase().includes(searchLower) ||
+      (patient.phone && patient.phone.includes(searchTerm))
+    );
+  });
 
   const handleSelect = (patientName: string) => {
     console.log('PatientSelector: handleSelect called with:', patientName);
@@ -37,11 +48,20 @@ export const PatientSelector = ({
       });
       console.log('PatientSelector: patient selected successfully');
     }
+    setSearchTerm(""); // Clear search when selecting
     setOpen(false);
   };
 
+  // Reset search when popover closes
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (!newOpen) {
+      setSearchTerm("");
+    }
+  };
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -59,29 +79,33 @@ export const PatientSelector = ({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" style={{ width: "var(--radix-popover-trigger-width)" }}>
-        <Command>
+        <Command shouldFilter={false}>
           <CommandInput 
             placeholder="Buscar paciente..." 
             className="h-9"
+            value={searchTerm}
+            onValueChange={setSearchTerm}
           />
           <CommandList>
             <CommandEmpty>
               {loading ? "Cargando pacientes..." : "No se encontraron pacientes."}
             </CommandEmpty>
             <CommandGroup>
-              {patients.map((patient) => (
+              {filteredPatients.map((patient) => (
                 <CommandItem
                   key={patient.id}
                   value={patient.name}
                   onSelect={(currentValue) => {
-                    // Find patient by name since CommandItem passes the value
-                    const selectedPatient = patients.find(p => p.name.toLowerCase() === currentValue.toLowerCase());
-                    if (selectedPatient) {
-                      handleSelect(selectedPatient.name);
-                    }
+                    console.log('CommandItem onSelect triggered with:', currentValue);
+                    handleSelect(patient.name);
                   }}
-                  onClick={() => handleSelect(patient.name)}
-                  className="cursor-pointer hover:bg-accent"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('CommandItem onClick triggered for:', patient.name);
+                    handleSelect(patient.name);
+                  }}
+                  className="cursor-pointer hover:bg-accent data-[selected=true]:bg-accent"
                 >
                   <div className="flex items-center justify-between w-full">
                     <div className="flex items-center space-x-2">
