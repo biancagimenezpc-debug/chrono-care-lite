@@ -1,9 +1,7 @@
-import { useState, useEffect } from "react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Check, ChevronsUpDown, User } from "lucide-react";
+import { Check, ChevronsUpDown, User, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePatients } from "@/hooks/usePatients";
 
@@ -23,6 +21,8 @@ export const PatientSelector = ({
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const { patients, loading } = usePatients();
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const selectedPatient = patients.find(patient => patient.name === value);
 
@@ -45,88 +45,124 @@ export const PatientSelector = ({
       phone: patient.phone || ""
     });
     console.log('PatientSelector: patient selected successfully');
-    setSearchTerm(""); // Clear search when selecting
+    setSearchTerm("");
     setOpen(false);
   };
 
-  // Reset search when popover closes
-  const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
-    if (!newOpen) {
-      setSearchTerm("");
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setOpen(false);
+        setSearchTerm("");
+      }
+    };
+
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
     }
+  }, [open]);
+
+  // Prevent event bubbling for patient items
+  const handlePatientClick = (e: React.MouseEvent, patient: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleSelect(patient);
+  };
+
+  const handlePatientTouch = (e: React.TouchEvent, patient: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleSelect(patient);
   };
 
   return (
-    <Popover open={open} onOpenChange={handleOpenChange}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between"
-        >
-          <div className="flex items-center space-x-2">
-            <User className="h-4 w-4" />
-            <span className="truncate">
-              {selectedPatient ? selectedPatient.name : placeholder}
-            </span>
-          </div>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-full p-0" style={{ width: "var(--radix-popover-trigger-width)" }}>
-        <div className="p-2">
-          <Input
-            placeholder="Buscar paciente..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="mb-2"
-          />
+    <div className="relative w-full" ref={containerRef}>
+      <Button
+        type="button"
+        variant="outline"
+        role="combobox"
+        aria-expanded={open}
+        className="w-full justify-between"
+        onClick={() => setOpen(!open)}
+      >
+        <div className="flex items-center space-x-2">
+          <User className="h-4 w-4" />
+          <span className="truncate">
+            {selectedPatient ? selectedPatient.name : placeholder}
+          </span>
         </div>
-        <ScrollArea className="max-h-60">
-          <div className="p-1">
+        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+      </Button>
+      
+      {open && (
+        <div 
+          ref={dropdownRef}
+          className="absolute top-full left-0 right-0 z-50 mt-1 bg-popover border border-border rounded-md shadow-lg overflow-hidden"
+          style={{ minWidth: '100%' }}
+        >
+          {/* Search Input */}
+          <div className="p-3 border-b border-border">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Buscar paciente..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+                autoFocus
+              />
+            </div>
+          </div>
+          
+          {/* Patient List */}
+          <div className="max-h-60 overflow-y-auto">
             {loading ? (
-              <div className="p-2 text-center text-sm text-muted-foreground">
+              <div className="p-4 text-center text-sm text-muted-foreground">
                 Cargando pacientes...
               </div>
             ) : filteredPatients.length === 0 ? (
-              <div className="p-2 text-center text-sm text-muted-foreground">
+              <div className="p-4 text-center text-sm text-muted-foreground">
                 No se encontraron pacientes.
               </div>
             ) : (
-              filteredPatients.map((patient) => (
-                <div
-                  key={patient.id}
-                  onClick={() => handleSelect(patient)}
-                  className={cn(
-                    "flex items-center justify-between w-full p-2 rounded-md cursor-pointer hover:bg-accent transition-colors",
-                    value === patient.name && "bg-accent"
-                  )}
-                >
-                  <div className="flex items-center space-x-2">
-                    <User className="h-4 w-4" />
-                    <div>
-                      <div className="font-medium">{patient.name}</div>
-                      {patient.phone && (
-                        <div className="text-sm text-muted-foreground">
-                          {patient.phone}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <Check
+              <div className="py-1">
+                {filteredPatients.map((patient) => (
+                  <div
+                    key={patient.id}
                     className={cn(
-                      "h-4 w-4",
-                      value === patient.name ? "opacity-100" : "opacity-0"
+                      "flex items-center justify-between w-full px-3 py-2 cursor-pointer hover:bg-accent transition-colors text-sm",
+                      value === patient.name && "bg-accent"
                     )}
-                  />
-                </div>
-              ))
+                    onMouseDown={(e) => handlePatientClick(e, patient)}
+                    onTouchStart={(e) => handlePatientTouch(e, patient)}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">{patient.name}</div>
+                        {patient.phone && (
+                          <div className="text-xs text-muted-foreground truncate">
+                            {patient.phone}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <Check
+                      className={cn(
+                        "h-4 w-4 text-primary",
+                        value === patient.name ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                  </div>
+                ))}
+              </div>
             )}
           </div>
-        </ScrollArea>
-      </PopoverContent>
-    </Popover>
+        </div>
+      )}
+    </div>
   );
 };
