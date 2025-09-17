@@ -86,7 +86,7 @@ export const PatientSelector = ({
             value={searchTerm}
             onValueChange={setSearchTerm}
           />
-          <CommandList>
+          <CommandList className="max-h-60 overflow-y-auto">
             <CommandEmpty>
               {loading ? "Cargando pacientes..." : "No se encontraron pacientes."}
             </CommandEmpty>
@@ -99,15 +99,20 @@ export const PatientSelector = ({
                     console.log('CommandItem onSelect triggered with:', currentValue);
                     handleSelect(patient.name);
                   }}
-                  onClick={(e) => {
+                  onMouseDown={(e) => {
+                    // Prevent default to avoid interfering with click
+                    e.preventDefault();
+                  }}
+                  onMouseUp={(e) => {
+                    // Handle the actual click on mouse up
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('CommandItem onClick triggered for:', patient.name);
+                    console.log('CommandItem onMouseUp triggered for:', patient.name);
                     handleSelect(patient.name);
                   }}
-                  className="cursor-pointer hover:bg-accent data-[selected=true]:bg-accent"
+                  className="cursor-pointer hover:bg-accent data-[selected=true]:bg-accent focus:bg-accent"
                 >
-                  <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center justify-between w-full pointer-events-none">
                     <div className="flex items-center space-x-2">
                       <User className="h-4 w-4" />
                       <div>
