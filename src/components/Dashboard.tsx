@@ -15,7 +15,7 @@ interface DashboardProps {
 const Dashboard = ({ onNavigate }: DashboardProps = {}) => {
   const { toast } = useToast();
   const { patients, loading: patientsLoading } = usePatients();
-  const { appointments, loading: appointmentsLoading } = useAppointments();
+  const { appointments, loading: appointmentsLoading, updateAppointment, deleteAppointment } = useAppointments();
   const { records: medicalRecords, loading: recordsLoading } = useMedicalRecords();
   const [navigationAction, setNavigationAction] = useState<string | null>(null);
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
@@ -117,6 +117,55 @@ const Dashboard = ({ onNavigate }: DashboardProps = {}) => {
     setIsDetailsDialogOpen(true);
   };
 
+  const handleReschedule = (appointment: any) => {
+    // Close the details dialog and navigate to appointments for rescheduling
+    setIsDetailsDialogOpen(false);
+    if (onNavigate) {
+      onNavigate('turnos');
+      // Show a toast to indicate the reschedule action
+      toast({
+        title: "Reprogramar cita",
+        description: `Redirigiendo para reprogramar la cita de ${appointment.patient_name}`,
+      });
+    }
+  };
+
+  const handleDelete = async (appointmentId: string) => {
+    try {
+      await deleteAppointment(appointmentId);
+      setIsDetailsDialogOpen(false);
+      toast({
+        title: "Cita eliminada",
+        description: "La cita ha sido eliminada correctamente",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la cita",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAttend = async (appointment: any) => {
+    try {
+      await updateAppointment(appointment.id, {
+        status: 'completada'
+      });
+      setIsDetailsDialogOpen(false);
+      toast({
+        title: "Cita atendida",
+        description: `La cita de ${appointment.patient_name} ha sido marcada como atendida`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado de la cita",
+        variant: "destructive",
+      });
+    }
+  };
+
   const loading = patientsLoading || appointmentsLoading || recordsLoading;
 
   if (loading) {
@@ -126,6 +175,7 @@ const Dashboard = ({ onNavigate }: DashboardProps = {}) => {
       </div>
     );
   }
+  
   const stats = [
     {
       title: "Pacientes Registrados",
@@ -294,26 +344,9 @@ const Dashboard = ({ onNavigate }: DashboardProps = {}) => {
         appointment={selectedAppointment}
         isOpen={isDetailsDialogOpen}
         onClose={() => setIsDetailsDialogOpen(false)}
-        onReschedule={(appointment) => {
-          // Navigate to appointments section for rescheduling
-          if (onNavigate) {
-            onNavigate('turnos');
-          }
-        }}
-        onDelete={(appointmentId) => {
-          // Note: Delete functionality would need to be implemented here
-          // For now, navigate to appointments section
-          if (onNavigate) {
-            onNavigate('turnos');
-          }
-        }}
-        onAttend={(appointment) => {
-          // Note: Attend functionality would need to be implemented here
-          // For now, navigate to appointments section
-          if (onNavigate) {
-            onNavigate('turnos');
-          }
-        }}
+        onReschedule={handleReschedule}
+        onDelete={handleDelete}
+        onAttend={handleAttend}
       />
     </div>
   );

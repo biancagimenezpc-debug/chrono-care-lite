@@ -10,6 +10,7 @@ export type Patient = {
   id: string
   created_at: string
   name: string
+  dni: string
   email: string
   phone: string
   birth_date: string

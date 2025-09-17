@@ -23,6 +23,7 @@ type MedicalRecord = Tables<'medical_records'>;
 // Esquema de validación para nuevo paciente
 const newPatientSchema = z.object({
   name: z.string().min(2, "El nombre es requerido"),
+  dni: z.string().min(7, "El DNI debe tener al menos 7 caracteres").max(20, "El DNI no puede tener más de 20 caracteres"),
   email: z.string().email("Email inválido").optional().or(z.literal("")),
   phone: z.string().min(10, "El teléfono debe tener al menos 10 dígitos"),
   birth_date: z.string().min(1, "La fecha de nacimiento es requerida"),
@@ -52,6 +53,7 @@ const PatientList = () => {
     resolver: zodResolver(newPatientSchema),
     defaultValues: {
       name: "",
+      dni: "",
       email: "",
       phone: "",
       birth_date: "",
@@ -81,6 +83,7 @@ const PatientList = () => {
       
       const patientData: Omit<Patient, 'id' | 'created_at'> = {
         name: data.name,
+        dni: data.dni,
         email: data.email || undefined,
         phone: data.phone,
         birth_date: isoDate, // Use converted ISO date
@@ -106,6 +109,7 @@ const PatientList = () => {
     resolver: zodResolver(newPatientSchema),
     defaultValues: {
       name: "",
+      dni: "",
       email: "",
       phone: "",
       birth_date: "",
@@ -124,6 +128,7 @@ const PatientList = () => {
     setEditingPatient(patient);
     editForm.reset({
       name: patient.name,
+      dni: patient.dni,
       email: patient.email || "",
       phone: patient.phone,
       birth_date: patient.birth_date,
@@ -166,6 +171,7 @@ const PatientList = () => {
       
       const patientData: Partial<Patient> = {
         name: data.name,
+        dni: data.dni,
         email: data.email || undefined,
         phone: data.phone,
         birth_date: isoDate, // Use converted ISO date
@@ -247,6 +253,22 @@ const PatientList = () => {
                     )}
                   />
                   
+                  <FormField
+                    control={form.control}
+                    name="dni"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>DNI *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Documento Nacional de Identidad" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="email"
@@ -480,6 +502,22 @@ const PatientList = () => {
                     )}
                   />
                   
+                  <FormField
+                    control={editForm.control}
+                    name="dni"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>DNI *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Documento Nacional de Identidad" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={editForm.control}
                     name="email"
@@ -816,6 +854,10 @@ const PatientList = () => {
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
+                      <div className="flex items-center space-x-2">
+                        <User className="w-4 h-4" />
+                        <span>DNI: {(patient as any).dni || 'No registrado'}</span>
+                      </div>
                       {patient.email && (
                         <div className="flex items-center space-x-2">
                           <Mail className="w-4 h-4" />

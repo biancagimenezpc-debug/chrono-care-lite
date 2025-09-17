@@ -31,6 +31,27 @@ export const usePatients = () => {
 
   const createPatient = async (patientData: Omit<Patient, 'id' | 'created_at'>) => {
     try {
+      // Check if DNI already exists
+      const { data: existingPatient, error: checkError } = await supabase
+        .from('patients')
+        .select('id, name')
+        .eq('dni', patientData.dni)
+        .single()
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        // PGRST116 means no results found, which is what we want
+        throw checkError
+      }
+
+      if (existingPatient) {
+        toast({
+          title: "DNI ya registrado",
+          description: `Ya existe un paciente con el DNI ${patientData.dni}. Paciente: ${existingPatient.name}`,
+          variant: "destructive",
+        })
+        throw new Error(`DNI ${patientData.dni} ya está registrado para ${existingPatient.name}`)
+      }
+
       const { data, error } = await supabase
         .from('patients')
         .insert([patientData])
