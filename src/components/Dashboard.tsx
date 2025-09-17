@@ -37,9 +37,11 @@ const Dashboard = ({ onNavigate }: DashboardProps = {}) => {
         return false;
       }
       
-      // Convert appointment date and time for comparison
-      const appointmentDate = new Date(apt.date);
-      const todayDate = new Date(today);
+      // Fix timezone issue by parsing dates as local time
+      const dateParts = apt.date.split('-');
+      const appointmentDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+      const todayParts = today.split('-');
+      const todayDate = new Date(parseInt(todayParts[0]), parseInt(todayParts[1]) - 1, parseInt(todayParts[2]));
       
       // If appointment is in the future, include it
       if (appointmentDate > todayDate) {
@@ -55,8 +57,12 @@ const Dashboard = ({ onNavigate }: DashboardProps = {}) => {
       return false;
     })
     .sort((a, b) => {
-      // Sort by date first, then by time
-      const dateComparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+      // Sort by date first, then by time - using timezone-safe parsing
+      const aDateParts = a.date.split('-');
+      const bDateParts = b.date.split('-');
+      const aDate = new Date(parseInt(aDateParts[0]), parseInt(aDateParts[1]) - 1, parseInt(aDateParts[2]));
+      const bDate = new Date(parseInt(bDateParts[0]), parseInt(bDateParts[1]) - 1, parseInt(bDateParts[2]));
+      const dateComparison = aDate.getTime() - bDate.getTime();
       if (dateComparison !== 0) return dateComparison;
       return a.time.localeCompare(b.time);
     })
@@ -210,7 +216,9 @@ const Dashboard = ({ onNavigate }: DashboardProps = {}) => {
                 </p>
               ) : (
                 upcomingAppointments.map((cita, index) => {
-                  const appointmentDate = new Date(cita.date);
+                  // Fix timezone issue by parsing date as local time
+                  const dateParts = cita.date.split('-');
+                  const appointmentDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
                   const isToday = cita.date === today;
                   const dateLabel = isToday ? 'Hoy' : appointmentDate.toLocaleDateString('es-ES', { 
                     weekday: 'short', 

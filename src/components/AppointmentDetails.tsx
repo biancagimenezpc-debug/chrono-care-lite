@@ -37,7 +37,9 @@ const AppointmentDetails = ({ appointment, isOpen, onClose }: AppointmentDetails
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    // Fix timezone issue by parsing date as local time instead of UTC
+    const dateParts = dateString.split('-');
+    const date = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
     return date.toLocaleDateString('es-ES', {
       weekday: 'long',
       year: 'numeric',
