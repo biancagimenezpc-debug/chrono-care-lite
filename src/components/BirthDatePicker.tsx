@@ -14,12 +14,12 @@ export function BirthDatePicker({ value, onChange, placeholder = "DD/MM/AAAA" }:
   // Sync with external value only when not typing
   React.useEffect(() => {
     if (!isTyping && value) {
-      const date = new Date(value)
+      const date = new Date(value + 'T12:00:00.000Z') // Add time to avoid timezone issues
       if (!isNaN(date.getTime())) {
-        // Format to DD/MM/YYYY for display
-        const day = String(date.getDate()).padStart(2, '0')
-        const month = String(date.getMonth() + 1).padStart(2, '0')
-        const year = date.getFullYear()
+        // Format to DD/MM/YYYY for display using UTC
+        const day = String(date.getUTCDate()).padStart(2, '0')
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+        const year = date.getUTCFullYear()
         setInputValue(`${day}/${month}/${year}`)
       }
     } else if (!isTyping && !value) {
@@ -70,8 +70,9 @@ export function BirthDatePicker({ value, onChange, placeholder = "DD/MM/AAAA" }:
     if (year < 1900 || year > new Date().getFullYear()) return false
     
     // Check if date actually exists (handles leap years, etc.)
-    const date = new Date(year, month - 1, day)
-    return date.getDate() === day && date.getMonth() === month - 1 && date.getFullYear() === year
+    // Use UTC to avoid timezone issues
+    const date = new Date(Date.UTC(year, month - 1, day))
+    return date.getUTCDate() === day && date.getUTCMonth() === month - 1 && date.getUTCFullYear() === year
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
