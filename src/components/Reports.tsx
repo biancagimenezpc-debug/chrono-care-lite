@@ -141,7 +141,7 @@ const Reports = () => {
             Exportación de Datos
           </CardTitle>
           <CardDescription>
-            Exporte datos del sistema a archivos CSV (upgrade a Excel instalando: npm install xlsx @types/xlsx)
+            Exporte datos del sistema a archivos Excel para análisis externo
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -151,7 +151,7 @@ const Reports = () => {
                 <Users className="w-8 h-8 text-primary mx-auto mb-2" />
                 <h3 className="font-semibold mb-2">Pacientes</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Lista completa de pacientes (formato CSV)
+                  Lista completa de pacientes registrados
                 </p>
                 <Button 
                   onClick={() => handleExport('patients')}
@@ -163,7 +163,7 @@ const Reports = () => {
                   ) : (
                     <Download className="w-4 h-4 mr-2" />
                   )}
-                  Exportar Pacientes (CSV)
+                  Exportar Pacientes
                 </Button>
               </CardContent>
             </Card>
@@ -173,7 +173,7 @@ const Reports = () => {
                 <Calendar className="w-8 h-8 text-accent mx-auto mb-2" />
                 <h3 className="font-semibold mb-2">Turnos</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Historial completo de citas (formato CSV)
+                  Historial completo de citas y turnos
                 </p>
                 <Button 
                   onClick={() => handleExport('appointments')}
@@ -185,7 +185,7 @@ const Reports = () => {
                   ) : (
                     <Download className="w-4 h-4 mr-2" />
                   )}
-                  Exportar Turnos (CSV)
+                  Exportar Turnos
                 </Button>
               </CardContent>
             </Card>
@@ -195,7 +195,7 @@ const Reports = () => {
                 <FileText className="w-8 h-8 text-success mx-auto mb-2" />
                 <h3 className="font-semibold mb-2">Pacientes + Historias</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Resumen con historias clínicas (formato CSV)
+                  Informe completo con historias clínicas
                 </p>
                 <Button 
                   onClick={() => handleExport('patients-records')}
@@ -207,7 +207,7 @@ const Reports = () => {
                   ) : (
                     <Download className="w-4 h-4 mr-2" />
                   )}
-                  Exportar Resumen (CSV)
+                  Exportar Completo
                 </Button>
               </CardContent>
             </Card>

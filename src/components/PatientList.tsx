@@ -14,10 +14,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { usePatients } from "@/hooks/usePatients";
 import { useMedicalRecords } from "@/hooks/useMedicalRecords";
+import { Patient } from "@/lib/supabase";
 import type { Tables } from "@/integrations/supabase/types";
 import { BirthDatePicker } from "@/components/BirthDatePicker";
 
-type Patient = Tables<'patients'>;
 type MedicalRecord = Tables<'medical_records'>;
 
 // Esquema de validación para nuevo paciente
