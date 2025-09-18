@@ -41,6 +41,7 @@ type NewPatientForm = z.infer<typeof newPatientSchema>;
 
 const PatientList = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [dniSearchTerm, setDniSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
@@ -174,10 +175,23 @@ const PatientList = () => {
     }
   };
 
-  const filteredPatients = patients.filter(patient =>
-    patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (patient.email && patient.email.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredPatients = patients.filter(patient => {
+    const matchesName = patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (patient.email && patient.email.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesDni = (patient as any).dni?.toLowerCase().includes(dniSearchTerm.toLowerCase()) ?? true;
+    
+    // If both search terms are empty, show all patients
+    if (!searchTerm && !dniSearchTerm) return true;
+    
+    // If only name search is used
+    if (searchTerm && !dniSearchTerm) return matchesName;
+    
+    // If only DNI search is used
+    if (!searchTerm && dniSearchTerm) return matchesDni;
+    
+    // If both searches are used, both must match
+    return matchesName && matchesDni;
+  });
 
   const calculateAge = (birthDate: string) => {
     const today = new Date();
@@ -805,16 +819,29 @@ const PatientList = () => {
 
       <Card>
         <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <CardTitle className="text-lg font-semibold">Lista de Pacientes ({patients.length})</CardTitle>
-            <div className="relative w-full sm:w-80">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar pacientes..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <CardTitle className="text-lg font-semibold">Lista de Pacientes ({patients.length})</CardTitle>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nombre o email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por DNI..."
+                  value={dniSearchTerm}
+                  onChange={(e) => setDniSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
           </div>
         </CardHeader>
