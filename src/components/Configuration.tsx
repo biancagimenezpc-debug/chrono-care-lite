@@ -144,8 +144,8 @@ const Configuration = () => {
         </Card>
       )}
 
-      {/* Gestión de Usuarios - Temporarily always shown for debugging */}
-      {true && (
+      {/* Gestión de Usuarios - SOLO para administradores */}
+      {isAdmin && (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
