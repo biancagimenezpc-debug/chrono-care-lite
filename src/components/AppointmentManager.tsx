@@ -33,11 +33,17 @@ const newAppointmentSchema = z.object({
 
 type NewAppointmentForm = z.infer<typeof newAppointmentSchema>;
 
+// Helper function to get today's date in local timezone
+const getTodayString = () => {
+  const today = new Date()
+  return today.getFullYear() + '-' + 
+    String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+    String(today.getDate()).padStart(2, '0')
+}
+
 const AppointmentManager = () => {
   const [selectedDate, setSelectedDate] = useState(() => {
-    const now = new Date()
-    // Use local timezone
-    return now.toISOString().split('T')[0]
+    return getTodayString()
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isRescheduleDialogOpen, setIsRescheduleDialogOpen] = useState(false);
@@ -333,12 +339,7 @@ const AppointmentManager = () => {
                         <FormControl>
                           <Input 
                             type="date" 
-                            min={(() => {
-                              const today = new Date();
-                              return today.getFullYear() + '-' + 
-                                String(today.getMonth() + 1).padStart(2, '0') + '-' + 
-                                String(today.getDate()).padStart(2, '0');
-                            })()} 
+                            min={getTodayString()} 
                             {...field} 
                           />
                         </FormControl>
@@ -534,7 +535,7 @@ const AppointmentManager = () => {
                         <FormControl>
                           <Input 
                             type="date" 
-                            min={new Date().toISOString().split('T')[0]}
+                            min={getTodayString()}
                             {...field} 
                           />
                         </FormControl>
@@ -697,7 +698,7 @@ const AppointmentManager = () => {
             <input
               type="date"
               value={selectedDate}
-              min={new Date().toISOString().split('T')[0]}
+              min={getTodayString()}
               onChange={(e) => setSelectedDate(e.target.value)}
               className="w-full p-2 border border-border rounded-md bg-background text-foreground"
             />
@@ -708,11 +709,7 @@ const AppointmentManager = () => {
               size="sm" 
               className="w-full mt-3"
               onClick={() => {
-                const today = new Date();
-                const todayString = today.getFullYear() + '-' + 
-                  String(today.getMonth() + 1).padStart(2, '0') + '-' + 
-                  String(today.getDate()).padStart(2, '0');
-                setSelectedDate(todayString);
+                setSelectedDate(getTodayString());
               }}
             >
               <Calendar className="w-4 h-4 mr-2" />
