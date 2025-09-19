@@ -284,7 +284,7 @@ const AppointmentManager = () => {
               <span>Nueva Cita</span>
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Agendar Nueva Cita</DialogTitle>
             </DialogHeader>
@@ -490,7 +490,7 @@ const AppointmentManager = () => {
 
         {/* Reschedule Dialog */}
         <Dialog open={isRescheduleDialogOpen} onOpenChange={setIsRescheduleDialogOpen}>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Reprogramar Cita</DialogTitle>
             </DialogHeader>

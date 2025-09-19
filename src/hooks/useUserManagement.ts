@@ -104,26 +104,55 @@ export const useUserManagement = () => {
         throw new Error('Solo los administradores pueden modificar usuarios')
       }
 
+      // First check if the user exists
+      const { data: existingUser, error: checkError } = await supabase
+        .from('user_profiles')
+        .select('id, full_name')
+        .eq('id', id)
+        .single()
+
+      if (checkError) {
+        if (checkError.code === 'PGRST116') {
+          throw new Error('Usuario no encontrado')
+        }
+        throw checkError
+      }
+
+      if (!existingUser) {
+        throw new Error('Usuario no encontrado')
+      }
+
       const { data, error } = await supabase
         .from('user_profiles')
-        .update(updates)
+        .update({ 
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', id)
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase update error:', error)
+        throw error
+      }
+
+      if (!data) {
+        throw new Error('No se pudo actualizar el usuario')
+      }
 
       setUsers(prev => prev.map(u => u.id === id ? data : u))
       toast({
         title: "Usuario actualizado",
-        description: "Los datos han sido actualizados correctamente",
+        description: `${existingUser.full_name} ha sido actualizado correctamente`,
       })
       
       return data
     } catch (error: any) {
+      console.error('Update user error:', error)
       toast({
         title: "Error al actualizar usuario",
-        description: error.message,
+        description: error.message || "Error desconocido al actualizar el usuario",
         variant: "destructive",
       })
       throw error
@@ -136,26 +165,61 @@ export const useUserManagement = () => {
         throw new Error('Solo los administradores pueden cambiar el estado de usuarios')
       }
 
+      // First check if the user exists
+      const { data: existingUser, error: checkError } = await supabase
+        .from('user_profiles')
+        .select('id, full_name, is_active')
+        .eq('id', id)
+        .single()
+
+      if (checkError) {
+        if (checkError.code === 'PGRST116') {
+          throw new Error('Usuario no encontrado')
+        }
+        throw checkError
+      }
+
+      if (!existingUser) {
+        throw new Error('Usuario no encontrado')
+      }
+
+      // Prevent admin from deactivating themselves
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user && existingUser.id === user.id && !is_active) {
+        throw new Error('No puedes desactivar tu propia cuenta')
+      }
+
       const { data, error } = await supabase
         .from('user_profiles')
-        .update({ is_active })
+        .update({ 
+          is_active,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', id)
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase update error:', error)
+        throw error
+      }
+
+      if (!data) {
+        throw new Error('No se pudo actualizar el usuario')
+      }
 
       setUsers(prev => prev.map(u => u.id === id ? data : u))
       toast({
         title: is_active ? "Usuario activado" : "Usuario desactivado",
-        description: "El estado del usuario ha sido actualizado",
+        description: `${existingUser.full_name} ha sido ${is_active ? 'activado' : 'desactivado'} correctamente`,
       })
       
       return data
     } catch (error: any) {
+      console.error('Toggle user status error:', error)
       toast({
         title: "Error al cambiar estado",
-        description: error.message,
+        description: error.message || "Error desconocido al cambiar el estado del usuario",
         variant: "destructive",
       })
       throw error
