@@ -14,13 +14,29 @@ export const useAppointments = () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Usuario no autenticado')
 
-      // First get the appointments
-      const { data: appointmentsData, error: appointmentsError } = await supabase
+      // Get user role to determine permissions
+      const { data: userProfile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single()
+
+      if (profileError) throw profileError
+
+      // Build query based on user role
+      let appointmentsQuery = supabase
         .from('appointments')
         .select('*')
-        .eq('doctor_id', user.id)
         .order('date', { ascending: true })
         .order('time', { ascending: true })
+
+      // If user is doctor, filter by doctor_id
+      if (userProfile?.role === 'doctor') {
+        appointmentsQuery = appointmentsQuery.eq('doctor_id', user.id)
+      }
+      // If user is admin, no filter needed (will see all appointments)
+
+      const { data: appointmentsData, error: appointmentsError } = await appointmentsQuery
 
       if (appointmentsError) throw appointmentsError
 
@@ -58,18 +74,39 @@ export const useAppointments = () => {
     }
   }
 
-  const createAppointment = async (appointmentData: Omit<Appointment, 'id' | 'created_at' | 'doctor_id' | 'patient_id'>) => {
+  const createAppointment = async (appointmentData: Omit<Appointment, 'id' | 'created_at' | 'patient_id'> & { doctor_id?: string }) => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Usuario no autenticado')
 
-      // Check for existing appointment at the same date/time
+      // Get user role to determine doctor_id
+      const { data: userProfile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single()
+
+      if (profileError) throw profileError
+
+      // Determine doctor_id based on user role and provided data
+      let doctorId: string
+      if (userProfile?.role === 'admin' && appointmentData.doctor_id) {
+        // Admin can assign to any doctor
+        doctorId = appointmentData.doctor_id
+      } else if (userProfile?.role === 'doctor') {
+        // Doctor can only assign to themselves
+        doctorId = user.id
+      } else {
+        throw new Error('No se pudo determinar el médico asignado')
+      }
+
+      // Check for existing appointment at the same date/time for the specific doctor
       const { data: existingAppointments, error: checkError } = await supabase
         .from('appointments')
         .select('id, patient_name, time')
         .eq('date', appointmentData.date)
         .eq('time', appointmentData.time)
-        .eq('doctor_id', user.id)
+        .eq('doctor_id', doctorId)
 
       if (checkError) throw checkError
 
@@ -82,7 +119,7 @@ export const useAppointments = () => {
         .from('appointments')
         .insert([{ 
           ...appointmentData, 
-          doctor_id: user.id,
+          doctor_id: doctorId,
           patient_id: null
         }])
         .select()

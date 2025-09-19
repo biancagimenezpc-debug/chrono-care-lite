@@ -14,6 +14,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAppointments } from "@/hooks/useAppointments";
 import { useConfiguration } from "@/hooks/useConfiguration";
+import { useDoctors } from "@/hooks/useDoctors";
+import { useUserManagement } from "@/hooks/useUserManagement";
 import { PatientSelector } from "@/components/PatientSelector";
 import { toast } from "@/hooks/use-toast";
 import AppointmentDetails from "@/components/AppointmentDetails";
@@ -26,6 +28,7 @@ const newAppointmentSchema = z.object({
   time: z.string().min(1, "La hora es requerida"),
   consultation_type: z.string().min(1, "El tipo de consulta es requerido"),
   notes: z.string().optional(),
+  doctor_id: z.string().optional(),
 });
 
 type NewAppointmentForm = z.infer<typeof newAppointmentSchema>;
@@ -44,6 +47,8 @@ const AppointmentManager = () => {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const { appointments, loading, createAppointment, updateAppointment, deleteAppointment } = useAppointments();
   const { configuration, getAvailableTimeSlots, isWorkingDay } = useConfiguration();
+  const { doctors, loading: doctorsLoading } = useDoctors();
+  const { isAdmin } = useUserManagement();
 
   const form = useForm<NewAppointmentForm>({
     resolver: zodResolver(newAppointmentSchema),
@@ -54,6 +59,7 @@ const AppointmentManager = () => {
       time: "",
       consultation_type: "",
       notes: "",
+      doctor_id: "",
     },
   });
 
@@ -67,6 +73,7 @@ const AppointmentManager = () => {
         time: prefilledData.time || "",
         consultation_type: "",
         notes: "",
+        doctor_id: "",
       });
     }
     setIsDialogOpen(true);
@@ -93,6 +100,7 @@ const AppointmentManager = () => {
       time: "",
       consultation_type: "",
       notes: "",
+      doctor_id: "",
     },
   });
 
@@ -105,6 +113,7 @@ const AppointmentManager = () => {
       time: "",
       consultation_type: appointment.consultation_type,
       notes: appointment.notes || "",
+      doctor_id: appointment.doctor_id || "",
     });
     setIsRescheduleDialogOpen(true);
   };
@@ -167,6 +176,7 @@ const AppointmentManager = () => {
         consultation_type: data.consultation_type!,
         notes: data.notes || '',
         status: 'programada' as const,
+        doctor_id: data.doctor_id || undefined,
       };
       
       await createAppointment(appointmentData);
@@ -401,6 +411,41 @@ const AppointmentManager = () => {
                   )}
                 />
 
+                {/* Selector de médico - solo para administradores */}
+                {isAdmin && (
+                  <FormField
+                    control={form.control}
+                    name="doctor_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Médico Asignado</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccionar médico" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {doctorsLoading ? (
+                              <SelectItem value="" disabled>
+                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                Cargando médicos...
+                              </SelectItem>
+                            ) : (
+                              doctors.map((doctor) => (
+                                <SelectItem key={doctor.user_id} value={doctor.user_id}>
+                                  {doctor.full_name} - {doctor.specialty || 'Sin especialidad'}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
                 <FormField
                   control={form.control}
                   name="notes"
@@ -561,6 +606,41 @@ const AppointmentManager = () => {
                     </FormItem>
                   )}
                 />
+
+                {/* Selector de médico - solo para administradores */}
+                {isAdmin && (
+                  <FormField
+                    control={rescheduleForm.control}
+                    name="doctor_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Médico Asignado</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleccionar médico" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {doctorsLoading ? (
+                              <SelectItem value="" disabled>
+                                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                Cargando médicos...
+                              </SelectItem>
+                            ) : (
+                              doctors.map((doctor) => (
+                                <SelectItem key={doctor.user_id} value={doctor.user_id}>
+                                  {doctor.full_name} - {doctor.specialty || 'Sin especialidad'}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
                 <FormField
                   control={rescheduleForm.control}

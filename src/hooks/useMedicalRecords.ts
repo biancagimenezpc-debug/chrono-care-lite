@@ -14,11 +14,28 @@ export const useMedicalRecords = () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Usuario no autenticado')
 
-      const { data, error } = await supabase
+      // Get user role to determine permissions
+      const { data: userProfile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single()
+
+      if (profileError) throw profileError
+
+      // Build query based on user role
+      let recordsQuery = supabase
         .from('medical_records')
         .select('*')
-        .eq('doctor_id', user.id)
         .order('date', { ascending: false })
+
+      // If user is doctor, filter by doctor_id (only their own records)
+      if (userProfile?.role === 'doctor') {
+        recordsQuery = recordsQuery.eq('doctor_id', user.id)
+      }
+      // If user is admin, no filter needed (will see all records)
+
+      const { data, error } = await recordsQuery
 
       if (error) throw error
       setRecords(data || [])
